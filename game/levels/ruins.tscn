@@ -1,0 +1,90 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://hero/hero.tscn" id="1_hero"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_sky"]
+
+[sub_resource type="Sky" id="Sky_main"]
+sky_material = SubResource("ProceduralSkyMaterial_sky")
+
+[sub_resource type="Environment" id="Environment_main"]
+background_mode = 2
+sky = SubResource("Sky_main")
+ambient_light_source = 3
+tonemap_mode = 2
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_floor"]
+albedo_color = Color(0.42, 0.4, 0.36, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_stone"]
+albedo_color = Color(0.62, 0.58, 0.52, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_low"]
+albedo_color = Color(0.45, 0.6, 0.45, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_high"]
+albedo_color = Color(0.65, 0.42, 0.4, 1)
+
+[node name="Ruins" type="Node3D"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_main")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+position = Vector3(0, 10, 0)
+rotation = Vector3(-0.872665, 0.523599, 0)
+shadow_enabled = true
+
+[node name="Floor" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+use_collision = true
+size = Vector3(24, 1, 24)
+material = SubResource("StandardMaterial3D_floor")
+
+[node name="BackWall" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 11.5)
+use_collision = true
+size = Vector3(16, 3, 1)
+material = SubResource("StandardMaterial3D_stone")
+
+[node name="SideWall" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.5, 1, 5)
+use_collision = true
+size = Vector3(1, 2, 10)
+material = SubResource("StandardMaterial3D_stone")
+
+[node name="LowLedge" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0.5, -3)
+use_collision = true
+size = Vector3(4, 1, 4)
+material = SubResource("StandardMaterial3D_low")
+
+[node name="HighLedge" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 1.25, -3)
+use_collision = true
+size = Vector3(4, 2.5, 4)
+material = SubResource("StandardMaterial3D_high")
+
+[node name="Column1" type="CSGCylinder3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, 1.5, 8)
+use_collision = true
+radius = 0.5
+height = 3.0
+material = SubResource("StandardMaterial3D_stone")
+
+[node name="Column2" type="CSGCylinder3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, 0.9, 3)
+use_collision = true
+radius = 0.5
+height = 1.8
+material = SubResource("StandardMaterial3D_stone")
+
+[node name="Column3" type="CSGCylinder3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 1.2, -8)
+use_collision = true
+radius = 0.5
+height = 2.4
+material = SubResource("StandardMaterial3D_stone")
+
+[node name="Hero" parent="." instance=ExtResource("1_hero")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 4)

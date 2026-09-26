@@ -1,0 +1,58 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://hero/hero.gd" id="1_hero"]
+[ext_resource type="Script" path="res://hero/camera_rig.gd" id="2_rig"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
+radius = 0.4
+height = 1.8
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_skin"]
+albedo_color = Color(0.95, 0.55, 0.2, 1)
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_body"]
+material = SubResource("StandardMaterial3D_skin")
+radius = 0.4
+height = 1.8
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_nose"]
+albedo_color = Color(0.2, 0.2, 0.25, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_nose"]
+material = SubResource("StandardMaterial3D_nose")
+size = Vector3(0.3, 0.15, 0.3)
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_arm"]
+radius = 0.2
+
+[node name="Hero" type="CharacterBody3D"]
+collision_layer = 2
+script = ExtResource("1_hero")
+
+[node name="Collision" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+shape = SubResource("CapsuleShape3D_body")
+
+[node name="Model" type="Node3D" parent="."]
+
+[node name="Body" type="MeshInstance3D" parent="Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+mesh = SubResource("CapsuleMesh_body")
+
+[node name="Nose" type="MeshInstance3D" parent="Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4, -0.4)
+mesh = SubResource("BoxMesh_nose")
+
+[node name="CameraRig" type="Node3D" parent="."]
+physics_interpolation_mode = 2
+top_level = true
+script = ExtResource("2_rig")
+
+[node name="Pitch" type="Node3D" parent="CameraRig"]
+
+[node name="SpringArm" type="SpringArm3D" parent="CameraRig/Pitch"]
+shape = SubResource("SphereShape3D_arm")
+spring_length = 4.0
+
+[node name="Camera" type="Camera3D" parent="CameraRig/Pitch/SpringArm"]
+current = true
