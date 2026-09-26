@@ -129,11 +129,16 @@ func camera_distance() -> float:
 	return camera_position().distance_to(_hero.global_position + Vector3.UP * CameraRig.PIVOT_HEIGHT)
 
 
-## Виден ли герой из камеры: луч от камеры до его груди не упирается в площадку.
-func is_seen_by_camera() -> bool:
-	var chest := _hero.global_position + Vector3.UP * 1.2
-	var query := PhysicsRayQueryParameters3D.create(camera_position(), chest, 1)
-	return _hero.get_world_3d().direct_space_state.intersect_ray(query).is_empty()
+## Виден ли герой: камера не внутри его капсулы, голова в кадре и не заслонена площадкой.
+func is_hero_visible() -> bool:
+	var shape := (_hero.get_node("Collision") as CollisionShape3D).shape as CapsuleShape3D
+	var offset := camera_position() - _hero.global_position
+	var inside_capsule := Vector2(offset.x, offset.z).length() < shape.radius \
+		and offset.y > 0.0 and offset.y < shape.height
+	var head := _hero.global_position + Vector3.UP * (shape.height - 0.2)
+	var query := PhysicsRayQueryParameters3D.create(camera_position(), head, 1)
+	var blocked := not _hero.get_world_3d().direct_space_state.intersect_ray(query).is_empty()
+	return not inside_capsule and _camera().is_position_in_frustum(head) and not blocked
 
 
 func is_cursor_captured() -> bool:

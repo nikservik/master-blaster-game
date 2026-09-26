@@ -2,14 +2,18 @@ class_name CameraRig
 extends Node3D
 
 ## Камера от третьего лица. Следует за героем, вращается мышью при захваченном курсоре.
-## У стен камеру придвигает дочерний SpringArm3D.
+## У стен камеру придвигает дочерний SpringArm3D. Центр вращения выше головы, а камера
+## всегда смотрит на героя: прижатая к стене, она оказывается над ним, а не внутри него.
 
-const PIVOT_HEIGHT := 1.6
+## Центр вращения выше макушки героя (капсула 1,8 м).
+const PIVOT_HEIGHT := 2.2
+## Куда смотрит камера: грудь героя.
+const LOOK_HEIGHT := 1.4
 const MOUSE_SENSITIVITY := 0.003
 ## Ограничения наклона: камера не уходит под героя и не встаёт над ним вертикально.
 const MIN_PITCH := deg_to_rad(-70.0)
 const MAX_PITCH := deg_to_rad(10.0)
-const DEFAULT_PITCH := deg_to_rad(-18.0)
+const DEFAULT_PITCH := deg_to_rad(-8.0)
 
 var yaw := 0.0
 var pitch := DEFAULT_PITCH
@@ -19,6 +23,7 @@ var _cursor_captured := false
 
 @onready var _hero: Node3D = get_parent()
 @onready var _pitch_pivot: Node3D = $Pitch
+@onready var _camera: Camera3D = $Pitch/SpringArm/Camera
 
 
 func _ready() -> void:
@@ -27,7 +32,9 @@ func _ready() -> void:
 
 
 func _process(_delta: float) -> void:
-	global_position = _hero.get_global_transform_interpolated().origin + Vector3.UP * PIVOT_HEIGHT
+	var hero_origin := _hero.get_global_transform_interpolated().origin
+	global_position = hero_origin + Vector3.UP * PIVOT_HEIGHT
+	_camera.look_at(hero_origin + Vector3.UP * LOOK_HEIGHT)
 
 
 func _unhandled_input(event: InputEvent) -> void:

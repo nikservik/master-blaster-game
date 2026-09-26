@@ -237,6 +237,7 @@ func test_MOV_S13_camera_stays_behind_and_above_and_follows() -> void:
 	# Then: сзади (камера смотрит на героя) и выше головы
 	assert_float(offset.dot(hero.camera_forward_flat())).is_less(-2.0)
 	assert_float(offset.y).is_greater(2.0)
+	assert_bool(hero.is_hero_visible()).is_true()
 	# When
 	await hero.run_forward(40)
 	await hero.wait(10)
@@ -267,11 +268,13 @@ func test_MOV_S15_camera_goes_neither_under_hero_nor_straight_above() -> void:
 	var offset := hero.camera_position() - hero.position()
 	assert_float(Vector2(offset.x, offset.z).length()).is_greater(0.5)
 	assert_float(offset.y).is_greater(0.0)
+	assert_bool(hero.is_hero_visible()).is_true()
 	# When: мышь далеко вверх — камера опускается
 	await hero.tilt_camera(-10000.0)
 	# Then: не уходит ниже ступней героя
 	offset = hero.camera_position() - hero.position()
 	assert_float(offset.y).is_greater(0.0)
+	assert_bool(hero.is_hero_visible()).is_true()
 
 
 ## MOV-2.3
@@ -279,11 +282,15 @@ func test_MOV_S16_wall_behind_hero_pulls_camera_closer_and_hero_stays_visible() 
 	# Given: герой спиной к стене, камера по умолчанию оказалась бы за ней
 	await hero.begin_on_start()
 	await hero.stand_at(level.spot_with_back_to_wall(1.0))
-	await hero.wait(5)
 	# Then
 	assert_float(hero.camera_distance()).is_less(1.5)
 	assert_float(hero.camera_position().z).is_less(level.back_wall_face_z())
-	assert_bool(hero.is_seen_by_camera()).is_true()
+	assert_bool(hero.is_hero_visible()).is_true()
+	# When: пятится вплотную к стене
+	await hero.run_back(30)
+	# Then: камера всё ещё перед стеной и герой виден
+	assert_float(hero.camera_position().z).is_less(level.back_wall_face_z())
+	assert_bool(hero.is_hero_visible()).is_true()
 
 
 ## MOV-2.4. Курсор захватывает ОС, а без окна захвата нет: спека идёт только в прогоне с окном.
