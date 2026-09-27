@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Экосистема — просмотр</title>
+<style>
+  :root { --bg: #f4f1ea; --panel: #fffdf8; --ink: #222; --muted: #777; --line: #d8d2c4; --accent: #2f6db5; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #16181b; --panel: #1f2226; --ink: #e8e6e1; --muted: #9a9a9a; --line: #33373c; --accent: #6aa6f0; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 13px/1.4 system-ui, sans-serif; background: var(--bg); color: var(--ink); display: flex; height: 100vh; }
+  #main { flex: 1; position: relative; min-width: 0; }
+  canvas { width: 100%; height: 100%; display: block; cursor: crosshair; }
+  #side { width: 320px; background: var(--panel); border-left: 1px solid var(--line); padding: 12px; overflow-y: auto; }
+  #bar { position: absolute; left: 0; right: 0; bottom: 0; padding: 8px 12px; background: color-mix(in srgb, var(--panel) 90%, transparent);
+         border-top: 1px solid var(--line); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  #bar input[type=range] { flex: 1; min-width: 160px; }
+  button, select { font: inherit; padding: 3px 10px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 4px; cursor: pointer; }
+  h3 { margin: 12px 0 6px; font-size: 13px; }
+  .legend div { display: flex; align-items: center; gap: 6px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  .prob { display: grid; grid-template-columns: 90px 1fr 42px; gap: 4px; align-items: center; margin: 2px 0; }
+  .prob .b { height: 10px; background: var(--accent); border-radius: 2px; }
+  .prob .chosen { font-weight: 700; }
+  .muted { color: var(--muted); }
+  #drop { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 8px; }
+</style>
+</head>
+<body>
+<div id="main">
+  <canvas id="cv"></canvas>
+  <div id="drop"><div>Запись прогона (JSONL): <code>python -m eco.run ... --record run.jsonl</code></div>
+    <input type="file" id="file" accept=".jsonl,.json,.txt"></div>
+  <div id="bar">
+    <button id="play">▶</button>
+    <select id="speed"><option value="2">2 кадра/с</option><option value="10" selected>10 кадров/с</option><option value="30">30 кадров/с</option><option value="60">60 кадров/с</option></select>
+    <input type="range" id="seek" min="0" max="0" value="0">
+    <span id="clock" class="muted"></span>
+    <label><input type="checkbox" id="labels" checked> паттерны</label>
+  </div>
+</div>
+<div id="side">
+  <div id="info" class="muted">Колесо — масштаб, перетаскивание — сдвиг, клик по животному — его последнее решение.</div>
+  <h3>Виды</h3><div id="legend" class="legend"></div>
+  <h3>Животное</h3><div id="sel" class="muted">не выбрано</div>
+</div>
+<script>
+const COLORS = {roe:"#c8873a", hare:"#9b8b6e", wolf:"#555b66", jay:"#3d7fd1", boar:"#6b4a33", lynx:"#b5652d",
+  fox:"#e0612a", raven:"#111", mouse:"#a39a91", owl:"#8a6d9e", badger:"#d9d9d9"};
+const cv = document.getElementById("cv"), ctx = cv.getContext("2d");
+let H = null, frames = [], decByUid = new Map(), fi = 0, playing = false, selUid = null;
+let view = {x: 0, y: 0, s: 1}, bg = null;
+
+document.getElementById("file").onchange = e => { const f = e.target.files[0]; if (f) f.text().then(load); };
+const q = new URLSearchParams(location.search).get("src");
+if (q) fetch(q).then(r => r.text()).then(load);
+
+function load(text) {
+  frames = []; decByUid = new Map();
+  for (const line of text.split("\n")) {
+    if (!line.trim()) continue;
+    const o = JSON.parse(line);
+    if (o.type === "header") H = o; else if (o.type === "frame") frames.push(o);
+  }
+  frames.forEach((f, k) => { for (const [u, d] of Object.entries(f.dec || {})) {
+    if (!decByUid.has(u)) decByUid.set(u, []); decByUid.get(u).push([k, d]); } });
+  document.getElementById("drop").style.display = "none";
+  const seek = document.getElementById("seek"); seek.max = frames.length - 1; seek.value = 0; fi = 0;
+  bg = makeBg(); fit(); legend(); draw();
+}
+function makeBg() {
+  const n = H.forest.length, c = document.createElement("canvas"); c.width = c.height = n;
+  const g = c.getContext("2d"), img = g.createImageData(n, n);
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+    const f = +H.forest[y][x] / 9, w = +H.water[y][x] > 4, i = (y * n + x) * 4;
+    const col = w ? [80, 140, 200] : [200 - 120 * f, 215 - 90 * f, 160 - 100 * f];
+    img.data.set([...col, 255], i);
+  }
+  g.putImageData(img, 0, 0); return c;
+}
+function fit() {
+  cv.width = cv.clientWidth * devicePixelRatio; cv.height = cv.clientHeight * devicePixelRatio;
+  view.s = Math.min(cv.width, cv.height) / H.size; view.x = 0; view.y = 0;
+}
+function legend() {
+  const f = frames[fi], cnt = {};
+  if (f) f.sp.forEach(s => { cnt[s] = (cnt[s] || 0) + 1; });
+  document.getElementById("legend").innerHTML = H.species.map((s, i) => cnt[i] ?
+    `<div><span class="dot" style="background:${COLORS[s.key]}"></span>${s.name} — ${cnt[i]}</div>` : "").join("");
+}
+const W2S = (x, y) => [(x - view.x) * view.s, (y - view.y) * view.s];
+function draw() {
+  if (!H) return;
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = getComputedStyle(document.body).backgroundColor; ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.imageSmoothingEnabled = false;
+  const [bx, by] = W2S(0, 0); ctx.drawImage(bg, bx, by, H.size * view.s, H.size * view.s);
+  ctx.fillStyle = "#4a3b2a"; for (const [x, y] of H.dens) { const [sx, sy] = W2S(x, y); ctx.fillRect(sx - 1.5, sy - 1.5, 3, 3); }
+  const f = frames[fi]; if (!f) return;
+  const r = Math.max(2.5, Math.min(7, view.s * 1.5)), showLbl = document.getElementById("labels").checked && view.s > 2.5;
+  const leaders = new Set(f.L);
+  ctx.font = `${Math.round(10 * devicePixelRatio)}px system-ui`;
+  for (let k = 0; k < f.uid.length; k++) {
+    const [sx, sy] = W2S(f.x[k], f.y[k]); if (sx < -10 || sy < -10 || sx > cv.width + 10 || sy > cv.height + 10) continue;
+    const key = H.species[f.sp[k]].key;
+    ctx.beginPath(); ctx.arc(sx, sy, r, 0, 7); ctx.fillStyle = COLORS[key]; ctx.fill();
+    if (leaders.has(k)) { ctx.lineWidth = 2; ctx.strokeStyle = "#ffd400"; ctx.stroke(); }
+    if (f.uid[k] === selUid) { ctx.lineWidth = 2; ctx.strokeStyle = "#e02020"; ctx.beginPath(); ctx.arc(sx, sy, r + 5, 0, 7); ctx.stroke(); }
+    if (showLbl) { ctx.fillStyle = "#111"; ctx.fillText(H.patterns[f.p[k]], sx + r + 2, sy + 3); }
+  }
+  document.getElementById("clock").textContent = `день ${f.day.toFixed(2)} · ${f.daypart} · ${f.season} · кадр ${fi + 1}/${frames.length}`;
+}
+function lastDecision(uid) {
+  const list = decByUid.get(String(uid)); if (!list) return null;
+  let best = null; for (const [k, d] of list) { if (k <= fi) best = d; else break; } return best;
+}
+function showSel() {
+  const el = document.getElementById("sel"), f = frames[fi];
+  if (selUid === null || !f) { el.textContent = "не выбрано"; return; }
+  const k = f.uid.indexOf(selUid);
+  if (k < 0) { el.innerHTML = `#${selUid} — нет в этом кадре (погибло или ещё не родилось)`; return; }
+  const d = lastDecision(selUid);
+  let html = `<b>${H.species[f.sp[k]].name}</b> #${selUid}<br>занятие: <b>${H.patterns[f.p[k]]}</b>${f.L.includes(k) ? " · вожак" : ""}${f.g[k] >= 0 ? " · группа " + f.g[k] : ""}<br>`;
+  if (!d) { el.innerHTML = html + '<span class="muted">решений в записи ещё нет</span>'; return; }
+  html += `<h3>Последнее решение (${d.kind}, t=${d.t} с, источник ${d.src})</h3>выбрано: <b>${d.chosen}</b>${d.target !== undefined ? ", цель #" + d.target : ""}${d.alarm_called ? ", крикнуло тревогу" : ""}`;
+  for (const [qn, v] of Object.entries(d)) {
+    if (v && typeof v === "object") {
+      html += `<h3>${qn}</h3>` + Object.entries(v).sort((a, b) => b[1] - a[1]).map(([o, p]) =>
+        `<div class="prob"><span class="${o === d.chosen ? "chosen" : ""}">${o}</span><div class="b" style="width:${Math.round(p * 100)}%"></div><span>${(p * 100).toFixed(0)}%</span></div>`).join("");
+    } else if (typeof v === "number" && !["t", "target"].includes(qn)) html += `<div class="prob"><span>${qn} (да)</span><div class="b" style="width:${Math.round(v * 100)}%"></div><span>${(v * 100).toFixed(0)}%</span></div>`;
+    else if (qn === "situation") html += `<div class="muted">ситуация: ${v}</div>`;
+  }
+  el.innerHTML = html;
+}
+function setFrame(k) { fi = Math.max(0, Math.min(frames.length - 1, k)); document.getElementById("seek").value = fi; draw(); legend(); showSel(); }
+document.getElementById("seek").oninput = e => setFrame(+e.target.value);
+document.getElementById("labels").onchange = draw;
+document.getElementById("play").onclick = () => { playing = !playing; document.getElementById("play").textContent = playing ? "❚❚" : "▶"; };
+let last = 0;
+function loop(ts) {
+  const fps = +document.getElementById("speed").value;
+  if (playing && frames.length && ts - last > 1000 / fps) { last = ts; if (fi >= frames.length - 1) playing = false; else setFrame(fi + 1); }
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+cv.addEventListener("wheel", e => {
+  e.preventDefault(); const mx = e.offsetX * devicePixelRatio, my = e.offsetY * devicePixelRatio;
+  const wx = mx / view.s + view.x, wy = my / view.s + view.y, z = e.deltaY < 0 ? 1.2 : 1 / 1.2;
+  view.s *= z; view.x = wx - mx / view.s; view.y = wy - my / view.s; draw();
+}, {passive: false});
+let drag = null;
+cv.addEventListener("mousedown", e => { drag = {x: e.clientX, y: e.clientY, vx: view.x, vy: view.y, moved: false}; });
+window.addEventListener("mousemove", e => { if (!drag) return; const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+  if (Math.abs(dx) + Math.abs(dy) > 3) drag.moved = true;
+  view.x = drag.vx - dx * devicePixelRatio / view.s; view.y = drag.vy - dy * devicePixelRatio / view.s; draw(); });
+window.addEventListener("mouseup", e => {
+  if (drag && !drag.moved && frames[fi]) {
+    const rc = cv.getBoundingClientRect(), f = frames[fi];
+    const wx = (e.clientX - rc.left) * devicePixelRatio / view.s + view.x, wy = (e.clientY - rc.top) * devicePixelRatio / view.s + view.y;
+    let best = -1, bd = (12 / view.s) ** 2;
+    for (let k = 0; k < f.uid.length; k++) { const d = (f.x[k] - wx) ** 2 + (f.y[k] - wy) ** 2; if (d < bd) { bd = d; best = k; } }
+    selUid = best >= 0 ? f.uid[best] : null; draw(); showSel();
+  }
+  drag = null;
+});
+window.addEventListener("resize", () => { if (H) { cv.width = cv.clientWidth * devicePixelRatio; cv.height = cv.clientHeight * devicePixelRatio; draw(); } });
+window.addEventListener("keydown", e => { if (e.key === " ") document.getElementById("play").click();
+  if (e.key === "ArrowRight") setFrame(fi + 1); if (e.key === "ArrowLeft") setFrame(fi - 1); });
+</script>
+</body>
+</html>
