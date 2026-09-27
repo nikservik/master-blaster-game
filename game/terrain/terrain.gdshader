@@ -18,6 +18,9 @@ uniform float sand_blend = 0.8;
 uniform vec3 sand_tint = vec3(1.5, 1.3, 0.98);
 // Тёплая олива травы по палитре: текстура сероватая.
 uniform vec3 grass_tint = vec3(1.05, 1.05, 0.62);
+// Пятна на ровном грунте по крупному шуму: сочная тёплая трава и песчаные проплешины.
+uniform sampler2D patch_tex : filter_linear_mipmap, repeat_enable;
+uniform vec3 lush_tint = vec3(0.95, 1.2, 0.55);
 
 // Transvoxel: переход между LOD — вершины на границе с грубым соседом смещаются во вторичное положение.
 uniform int u_transition_mask;
@@ -71,6 +74,10 @@ void fragment() {
 
 	float flat_amount = smoothstep(grass_min_normal_y - grass_blend, grass_min_normal_y + grass_blend, n.y);
 	float sand_amount = 1.0 - smoothstep(sand_top - sand_blend, sand_top + sand_blend, world_pos.y);
+	float patch_value = texture(patch_tex, world_pos.xz * 0.015).r;
+	vec3 lush = grass * lush_tint;
+	grass = mix(grass, lush, smoothstep(0.55, 0.68, patch_value));
+	grass = mix(grass, sand, smoothstep(0.4, 0.22, patch_value) * 0.7);
 	vec3 surface = mix(stone, mix(grass, sand, sand_amount), flat_amount);
 	ALBEDO = surface * v_ground.x + stone * v_ground.y + dirt * v_ground.z;
 	ROUGHNESS = 0.95;

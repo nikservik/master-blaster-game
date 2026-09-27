@@ -23,6 +23,26 @@
 [ext_resource type="PackedScene" path="res://assets/vegetation/fern.gltf" id="20_fern"]
 [ext_resource type="PackedScene" path="res://assets/vegetation/bush_flowers.gltf" id="21_bush_flowers"]
 [ext_resource type="PackedScene" path="res://assets/vegetation/palm_3.gltf" id="22_palm_3"]
+[ext_resource type="PackedScene" path="res://assets/ruins/debris_slab.gltf" id="23_slab"]
+[ext_resource type="PackedScene" path="res://assets/vegetation/grass_tall.gltf" id="24_grass"]
+
+[sub_resource type="Gradient" id="Gradient_sand"]
+colors = PackedColorArray(0.8, 0.7, 0.52, 0.9, 0.8, 0.7, 0.52, 0)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_sand"]
+gradient = SubResource("Gradient_sand")
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(1, 0.5)
+
+[sub_resource type="Gradient" id="Gradient_grass"]
+colors = PackedColorArray(0.3, 0.42, 0.12, 1, 0.3, 0.42, 0.12, 0)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_grass"]
+gradient = SubResource("Gradient_grass")
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(1, 0.5)
 
 [node name="Decor" type="Node3D"]
 script = ExtResource("0_decor")
@@ -137,3 +157,63 @@ transform = Transform3D(1.1000, 0, -0.0000, 0, 1.1000, 0, 0.0000, 0, 1.1000, -18
 
 [node name="Bush5" parent="." instance=ExtResource("16_plant_big")]
 transform = Transform3D(1.0000, 0, -0.0000, 0, 1.0000, 0, 0.0000, 0, 1.0000, 10, 39.9, 24.5)
+
+[node name="SandNW" type="Decal" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11, 40, -11)
+size = Vector3(7.5, 1.2, 7.5)
+texture_albedo = SubResource("GradientTexture2D_sand")
+
+[node name="SandW" type="Decal" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 40, 3)
+size = Vector3(6.5, 1.2, 6.5)
+texture_albedo = SubResource("GradientTexture2D_sand")
+
+[node name="SandN" type="Decal" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 40, -12)
+size = Vector3(6.5, 1.2, 6.5)
+texture_albedo = SubResource("GradientTexture2D_sand")
+
+[node name="GrassW" type="Decal" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.5, 40, -5)
+size = Vector3(5.5, 1.2, 5.5)
+texture_albedo = SubResource("GradientTexture2D_grass")
+
+[node name="GrassN" type="Decal" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 40, -11.5)
+size = Vector3(5.5, 1.2, 5.5)
+texture_albedo = SubResource("GradientTexture2D_grass")
+
+[node name="GrassSW" type="Decal" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11, 40, 9)
+size = Vector3(4.5, 1.2, 4.5)
+texture_albedo = SubResource("GradientTexture2D_grass")
+
+[node name="EdgeSlab1" parent="." instance=ExtResource("23_slab")]
+transform = Transform3D(0.9397, 0, -0.3420, 0, 1.0000, 0, 0.3420, 0, 0.9397, -11.3, 40, -8)
+
+[node name="EdgeSlab2" parent="." instance=ExtResource("23_slab")]
+transform = Transform3D(0.2588, 0, -0.9659, 0, 1.0000, 0, 0.9659, 0, 0.2588, -8.5, 40, -11.4)
+
+[node name="EdgeSlab3" parent="." instance=ExtResource("23_slab")]
+transform = Transform3D(0.8693, 0, 0.2329, 0, 0.9000, 0, -0.2329, 0, 0.8693, -11.5, 40, 6.5)
+
+[node name="FloorGrass1" parent="." instance=ExtResource("24_grass")]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1.0000, 0, 0.0000, 0, 1.0000, -11, 40, -11)
+
+[node name="FloorGrass2" parent="." instance=ExtResource("24_grass")]
+transform = Transform3D(0.6894, 0, -0.5785, 0, 0.9000, 0, 0.5785, 0, 0.6894, -11.4, 40, 2.5)
+
+[node name="FloorGrass3" parent="." instance=ExtResource("24_grass")]
+transform = Transform3D(0.0000, 0, -1.0000, 0, 1.0000, 0, 1.0000, 0, 0.0000, 6, 40, -11.3)
+
+[node name="FloorGrass4" parent="." instance=ExtResource("24_grass")]
+transform = Transform3D(0.7878, 0, -0.1389, 0, 0.8000, 0, 0.1389, 0, 0.7878, -10.5, 40, -3.5)
+
+[node name="FloorBush1" parent="." instance=ExtResource("15_bush")]
+transform = Transform3D(0.8000, 0, -0.0000, 0, 0.8000, 0, 0.0000, 0, 0.8000, -11.2, 40, -6.2)
+
+[node name="FloorFern1" parent="." instance=ExtResource("20_fern")]
+transform = Transform3D(0.9000, 0, -0.0000, 0, 0.9000, 0, 0.0000, 0, 0.9000, 1.5, 40, -11.2)
+
+[node name="FloorFern2" parent="." instance=ExtResource("20_fern")]
+transform = Transform3D(-0.5000, 0, -0.8660, 0, 1.0000, 0, 0.8660, 0, -0.5000, -11, 40, 8.5)

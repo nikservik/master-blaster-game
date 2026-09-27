@@ -297,4 +297,18 @@ func _make_material() -> ShaderMaterial:
 	mat.set_shader_parameter("grass_blend", GRASS_BLEND)
 	mat.set_shader_parameter("sand_top", SAND_TOP)
 	mat.set_shader_parameter("sand_blend", SAND_BLEND)
+	mat.set_shader_parameter("patch_tex", _patch_noise())
 	return mat
+
+
+## Крупный шум пятен на ровном грунте: куртины тёплой травы и песчаные проплешины.
+static func _patch_noise() -> NoiseTexture2D:
+	var noise := FastNoiseLite.new()
+	noise.frequency = 0.02
+	noise.fractal_octaves = 3
+	var tex := NoiseTexture2D.new()
+	tex.width = 256
+	tex.height = 256
+	tex.seamless = true
+	tex.noise = noise
+	return tex
