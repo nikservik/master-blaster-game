@@ -1,10 +1,11 @@
 extends GdUnitTestSuite
 
 ## Спеки фичи «Строительство» (docs/features/building.md, BLD-1…BLD-4).
-## Горячий стенд: главная сцена загружается один раз; строят на ровном поле восточнее руин.
+## Горячий стенд: площадка руин без рельефа загружается один раз; строят на ровном поле восточнее руин.
 
 const HeroDriver := preload("res://specs/drivers/hero_driver.gd")
 const BuilderDriver := preload("res://specs/drivers/builder_driver.gd")
+const RUINS := "res://levels/ruins.tscn"
 
 ## Где стоит герой на поле и куда смотрит камера по умолчанию (−Z).
 const FIELD_SPOT := Vector3(28, 0, 6)
@@ -19,8 +20,7 @@ var _stand: Node3D
 
 
 func before() -> void:
-	var main_scene: String = ProjectSettings.get_setting("application/run/main_scene")
-	_stand = (load(main_scene) as PackedScene).instantiate()
+	_stand = (load(RUINS) as PackedScene).instantiate()
 	add_child(_stand)
 	hero = HeroDriver.new(_stand.get_node("Hero") as Hero)
 	builder = BuilderDriver.new(_stand.get_node("Builder") as Builder, hero)

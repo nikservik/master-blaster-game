@@ -1,10 +1,12 @@
 extends GdUnitTestSuite
 
 ## Спеки фичи «Передвижение и камера» (docs/features/movement.md, MOV-1…MOV-3).
-## Горячий стенд: главная сцена загружается один раз на весь набор.
+## Горячий стенд: площадка руин с ровным полом загружается один раз на весь набор.
 
 const HeroDriver := preload("res://specs/drivers/hero_driver.gd")
 const LevelDriver := preload("res://specs/drivers/level_driver.gd")
+## Спеки передвижения идут на площадке руин без рельефа: размеры пола и уступов в ней точные.
+const RUINS := "res://levels/ruins.tscn"
 
 var hero: HeroDriver
 var level: LevelDriver
@@ -13,8 +15,7 @@ var _cursor_captured_on_launch := false
 
 
 func before() -> void:
-	var main_scene: String = ProjectSettings.get_setting("application/run/main_scene")
-	_stand = (load(main_scene) as PackedScene).instantiate()
+	_stand = (load(RUINS) as PackedScene).instantiate()
 	add_child(_stand)
 	_cursor_captured_on_launch = Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
 	hero = HeroDriver.new(_stand.get_node("Hero") as Hero)
