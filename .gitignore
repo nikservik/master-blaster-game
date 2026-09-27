@@ -1,3 +1,9 @@
 # Godot: импортный кеш и отчёты тестов
 game/.godot/
 game/reports/
+
+# Симуляция экосистемы: сырые данные прогонов и окружение Python
+sim/out/
+sim/**/__pycache__/
+sim/**/.venv/
+sim/**/.pytest_cache/
