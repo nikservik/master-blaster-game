@@ -19,6 +19,14 @@ script = ExtResource("5_vegetation")
 [node name="Ruins" parent="." instance=ExtResource("2_ruins")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 40, 0)
 
+[node name="Field" parent="Ruins"]
+visible = false
+use_collision = false
+
+[node name="Slope" parent="Ruins"]
+visible = false
+use_collision = false
+
 [node name="Viewer" type="VoxelViewer" parent="Ruins/Hero"]
 view_distance = 1024
 
