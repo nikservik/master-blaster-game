@@ -68,7 +68,11 @@ vec3 triplanar(sampler2D tex, vec3 p, vec3 w) {
 
 void fragment() {
 	vec3 n = normalize(world_normal);
-	vec3 w = pow(abs(n), vec3(4.0));
+	// Проекцию текстуры выбирает нормаль грани, если нормаль вершины с ней сильно расходится: на остром стыке
+	// шаров копания нормаль по полю расстояния смотрит вдоль стенки, и текстура растягивается в полосы.
+	vec3 face = normalize(cross(dFdx(world_pos), dFdy(world_pos)));
+	vec3 texture_normal = mix(face, n, smoothstep(0.5, 0.8, abs(dot(n, face))));
+	vec3 w = pow(abs(texture_normal), vec3(4.0));
 	w /= (w.x + w.y + w.z);
 
 	vec3 grass = triplanar(grass_tex, world_pos, w) * grass_tint;
