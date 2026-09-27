@@ -12,15 +12,43 @@ const GRAVITY := 24.0
 const TURN_SPEED := 12.0
 ## Ниже этой высоты герой считается упавшим с площадки.
 const FALL_LIMIT_Y := -10.0
+## Скорость, под которую нарисован клип бега.
+const RUN_CLIP_SPEED := 5.4
+## Время перехода между клипами, с.
+const BLEND := 0.15
 
 @onready var camera_rig: CameraRig = $CameraRig
 @onready var _model: Node3D = $Model
+@onready var _animation: AnimationPlayer = $Model/Body.find_child("AnimationPlayer") as AnimationPlayer
 
 var _start: Vector3
+var _dig_left := 0.0
 
 
 func _ready() -> void:
 	_start = global_position
+
+
+func _process(delta: float) -> void:
+	_dig_left = maxf(_dig_left - delta, 0.0)
+	var speed := Vector2(velocity.x, velocity.z).length()
+	var clip := &"idle"
+	var scale := 1.0
+	if _dig_left > 0.0:
+		clip = &"dig"
+	elif not is_on_floor():
+		clip = &"jump" if velocity.y > 0.0 else &"fall"
+	elif speed > 0.5:
+		clip = &"run"
+		scale = speed / RUN_CLIP_SPEED
+	if _animation.current_animation != clip:
+		_animation.play(clip, BLEND)
+	_animation.speed_scale = scale
+
+
+## Проигрывает взмах копания поверх бега и ожидания.
+func play_dig() -> void:
+	_dig_left = _animation.get_animation(&"dig").length
 
 
 func _physics_process(delta: float) -> void:
