@@ -54,8 +54,11 @@ const SAND_BLEND := 0.8
 const COVER_HEIGHTS: Array[float] = [3.0, 6.0, 9.0]
 
 const BRUSH_RADIUS := 1.5
-## Грунт в этом радиусе вокруг шара становится землёй или влажным песком: стенки ямы и насыпь.
-const DIRT_RADIUS := BRUSH_RADIUS + 1.0
+## Ширина мягкого стыка при копании, м: столько поле шара и старого грунта смешиваются у их границы.
+const DIG_BLEND := 1.0
+## Грунт в этом радиусе вокруг шара становится землёй или влажным песком: стенки ямы и насыпь. Яма шире шара
+## на DIG_BLEND, и ещё метр — ячейка, из вокселей которой смешивается цвет стенки.
+const DIRT_RADIUS := BRUSH_RADIUS + DIG_BLEND + 1.0
 ## На пляже тронутый грунт не глубже этого от исходной поверхности — влажный песок (TER-1.2).
 const WET_SAND_DEPTH := 1.5
 ## Цвет поверхности смешивается из вокселей ячейки под ней, до 1 м глубже: чтобы поверхность до WET_SAND_DEPTH
@@ -64,9 +67,10 @@ const CELL := 1.0
 ## Исходную поверхность для окраски ищут в столбце ± столько метров от центра правки.
 const GENERATED_REACH := 16
 ## Верхний слой грунта толщиной SKIN_DEPTH красится только до SKIN_MARGIN за краем шара: стенки ямы
-## окрашены, а ровная поверхность вокруг остаётся нетронутой.
+## окрашены, а ровная поверхность вокруг остаётся нетронутой. Запас равен ширине мягкого стыка DIG_BLEND:
+## на столько яма шире шара.
 const SKIN_DEPTH := 1.0
-const SKIN_MARGIN := 0.5
+const SKIN_MARGIN := 1.0
 const AUTOSAVE_SECONDS := 60.0
 
 ## Версия формы мира. Хранилище пишет блоки целиком, и блоки, сохранённые при другой форме генератора, дают швы
@@ -148,9 +152,7 @@ func _save_and_quit() -> void:
 
 ## Убрать шар грунта; стенки ямы становятся землёй, на пляже у поверхности — влажным песком.
 func dig(center: Vector3) -> void:
-	_tool.mode = VoxelTool.MODE_REMOVE
-	_tool.do_sphere(center, BRUSH_RADIUS)
-	_remove_thin_plates(center)
+	_dig_sphere(center)
 	_paint_dirt(center)
 
 
@@ -161,33 +163,28 @@ func fill(center: Vector3) -> void:
 	_paint_dirt(center)
 
 
+## Убирает шар грунта с мягким стыком: новое поле — гладкий максимум старого и шара с шириной DIG_BLEND.
+## Жёсткий максимум оставлял между шарами на разной высоте острые гребни тоньше вокселя, и сетка рисовала
+## их торчащими плоскостями; мягкий скругляет стык и с ямами от прошлых копаний.
+func _dig_sphere(center: Vector3) -> void:
+	var reach := ceili(BRUSH_RADIUS + DIG_BLEND)
+	var middle := Vector3i(center.round())
+	for dx in range(-reach, reach + 1):
+		for dy in range(-reach, reach + 1):
+			for dz in range(-reach, reach + 1):
+				var voxel := middle + Vector3i(dx, dy, dz)
+				var sphere := BRUSH_RADIUS - Vector3(voxel).distance_to(center)
+				var old := _tool.get_voxel_f(voxel)
+				if sphere < old - DIG_BLEND:
+					continue
+				_tool.set_voxel_f(voxel, smooth_max(old, sphere, DIG_BLEND))
 
-## Убирает пластины грунта толщиной в воксель у ямы: соседние шары на разной высоте оставляют между собой
-## острые гребни тоньше вокселя, сетка рисует их торчащими плоскостями. Воксель грунта, у которого вдоль
-## какой-нибудь оси с обеих сторон воздух, становится воздухом.
-func _remove_thin_plates(center: Vector3) -> void:
-	var reach := ceili(BRUSH_RADIUS) + 1
-	var origin := Vector3i(center.round()) - Vector3i.ONE * (reach + 1)
-	var size := (reach + 1) * 2 + 1
-	var sdf := {}
-	for x in size:
-		for y in size:
-			for z in size:
-				var voxel := origin + Vector3i(x, y, z)
-				sdf[voxel] = _tool.get_voxel_f(voxel)
-	var axes: Array[Vector3i] = [Vector3i(1, 0, 0), Vector3i(0, 1, 0), Vector3i(0, 0, 1)]
-	var cleared := {}
-	for voxel: Vector3i in sdf:
-		if sdf[voxel] >= 0.0:
-			continue
-		for axis in axes:
-			var before: Variant = sdf.get(voxel - axis)
-			var after: Variant = sdf.get(voxel + axis)
-			if before != null and after != null and before > 0.0 and after > 0.0:
-				cleared[voxel] = minf(before, after) * 0.5
-				break
-	for voxel: Vector3i in cleared:
-		_tool.set_voxel_f(voxel, cleared[voxel])
+
+## Гладкий максимум: равен max(a, b), когда a и b различаются больше чем на k, и плавно больше рядом со стыком.
+static func smooth_max(a: float, b: float, k: float) -> float:
+	var h := maxf(k - absf(a - b), 0.0) / k
+	return maxf(a, b) + h * h * k * 0.25
+
 
 ## Красит тронутый грунт вокруг шара: на пляже не глубже WET_SAND_DEPTH от исходной поверхности —
 ## влажный песок, глубже и вне пляжа — земля. Исходную поверхность даёт генератор.
