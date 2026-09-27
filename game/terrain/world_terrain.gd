@@ -29,7 +29,7 @@ const FLAT_CENTER := Vector2(16.0, 0.0)
 const FLAT_HALF := Vector2(32.0, 24.0)
 ## Ширина перехода от ровной площадки к холмам.
 const FLAT_BLEND := 24.0
-## Обрыв: вдоль z = CLIFF_Z рельеф поднимается на CLIFF_HEIGHT м. Объёмный шум сдвигает линию обрыва
+## Обрыв: вдоль z = CLIFF_Z рельеф поднимается на CLIFF_HEIGHT м. Шум по (x, y) сдвигает лицо стены
 ## до ±CLIFF_WARP м — так получаются нависания.
 const CLIFF_Z := -70.0
 const CLIFF_HEIGHT := 25.0
@@ -247,16 +247,19 @@ static func make_generator() -> VoxelGeneratorGraph:
 	return gen
 
 
-## Расстояние до поверхности в точке (x, y, z) графа. Нависания: линия обрыва сдвигается объёмным шумом,
-## поэтому на разной высоте стена выступает по-разному. Обрыв далеко от руин, там доля холмов равна 1.
+## Расстояние до поверхности в точке (x, y, z) графа. Обрыв — стена, а не ступень высоты: грунт — объединение
+## земли без обрыва и плиты плато, ограниченной сверху высотой плато, а с юга — лицом стены. Лицо стоит на
+## CLIFF_Z − 1 − CLIFF_WARP·n, где n — шум по (x, y): на разной высоте стена выступает по-разному, так
+## получаются нависания. Поле остаётся расстоянием: без тонких пластин и щелей, которые давала крутая
+## ступень со сдвигом. Обрыв далеко от руин, там доля холмов равна 1.
 static func _sdf(g: VoxelGraphFunction, noise: FastNoiseLite, x: int, y: int, z: int, height: int) -> int:
-	var warp := g.create_node(VoxelGraphFunction.NODE_NOISE_3D, Vector2())
+	var warp := g.create_node(VoxelGraphFunction.NODE_NOISE_2D, Vector2())
 	g.set_node_param_by_name(warp, "noise", noise)
 	g.add_connection(x, 0, warp, 0)
 	g.add_connection(y, 0, warp, 1)
-	g.add_connection(z, 0, warp, 2)
-	var overhang := "(%s - %s)" % [_cliff("z + n * %s" % _num(CLIFF_WARP)), _cliff("z")]
-	return _expression(g, "y - h - " + overhang, ["y", "z", "h", "n"], [y, z, height, warp])
+	var low := _expression(g, "h - " + _cliff("z"), ["z", "h"], [z, height])
+	var face := _expression(g, "z + %s + n * %s" % [_num(1.0 - CLIFF_Z), _num(CLIFF_WARP)], ["z", "n"], [z, warp])
+	return _expression(g, "min(y - l, max(f, y - l - %s))" % _num(CLIFF_HEIGHT), ["y", "l", "f"], [y, low, face])
 
 
 ## Ступень обрыва в выражении графа: 0 со стороны +Z, CLIFF_HEIGHT за линией CLIFF_Z.
