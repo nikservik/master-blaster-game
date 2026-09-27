@@ -21,18 +21,30 @@ const WALL_HEIGHT := 2.8
 const DOOR_WIDTH := 1.0
 const DOOR_HEIGHT := 2.2
 const STAIRS_RISE := 3.0
-const STAIRS_STEPS := 10
 ## Опора фундамента — столб 0,2 × 0,2 м в углу плиты; грунт ищется не глубже SUPPORT_DEPTH под плитой.
+## Вид столба — модель 0,3 × 0,3 м на той же оси: она выступает за край плиты на 5 см.
 const SUPPORT := 0.2
 const SUPPORT_DEPTH := 20.0
 
-const COLORS := {
-	Kind.FOUNDATION: Color(0.55, 0.53, 0.5),
-	Kind.FLOOR: Color(0.6, 0.45, 0.3),
-	Kind.WALL: Color(0.78, 0.72, 0.6),
-	Kind.DOOR_WALL: Color(0.78, 0.72, 0.6),
-	Kind.STAIRS: Color(0.5, 0.36, 0.24),
+## Вид детали — модели assets/building/ в порядке размеров SIZES. Начало и оси моделей
+## совпадают с координатами детали, поэтому модель встаёт без смещения и поворота.
+const MODELS := {
+	Kind.FOUNDATION: [
+		preload("res://assets/building/foundation_2x2.gltf"),
+		preload("res://assets/building/foundation_2x1.gltf"),
+		preload("res://assets/building/foundation_1x1.gltf"),
+	],
+	Kind.FLOOR: [
+		preload("res://assets/building/floor_2x2.gltf"),
+		preload("res://assets/building/floor_2x1.gltf"),
+		preload("res://assets/building/floor_1x1.gltf"),
+	],
+	Kind.WALL: [preload("res://assets/building/wall_2m.gltf"), preload("res://assets/building/wall_1m.gltf")],
+	Kind.DOOR_WALL: [preload("res://assets/building/wall_door_2m.gltf")],
+	Kind.STAIRS: [preload("res://assets/building/stairs_2x4.gltf")],
 }
+## Опора: от 0 вниз до −1 м; длину до грунта задаёт масштаб по Y.
+const POST := preload("res://assets/building/post_1m.gltf")
 
 var kind: Kind
 var size_index: int
@@ -92,40 +104,34 @@ static func _box(center: Vector3, size: Vector3, shrink: Vector3) -> Array:
 	return [shape, Transform3D(Basis.IDENTITY, center)]
 
 
-## Собирает деталь: видимые формы и, если это не призрак, коллизию.
+## Собирает деталь: вид из модели и, если это не призрак, коллизию.
 func setup(part_kind: Kind, part_size: int, ghost: bool) -> void:
 	kind = part_kind
 	size_index = part_size
 	collision_layer = Builder.CONSTRUCTION_LAYERS
 	collision_mask = 0
-	var material := StandardMaterial3D.new()
-	material.albedo_color = COLORS[kind]
 	if not ghost:
 		for solid in solids(kind, size_index):
 			var collision := CollisionShape3D.new()
 			collision.shape = solid[0]
 			collision.transform = solid[1]
 			add_child(collision)
-	if kind == Kind.STAIRS:
-		_add_steps(material)
-	else:
-		for solid in solids(kind, size_index):
-			var mesh := BoxMesh.new()
-			mesh.size = (solid[0] as BoxShape3D).size
-			mesh.material = material
-			var view := MeshInstance3D.new()
-			view.mesh = mesh
-			view.transform = solid[1]
-			add_child(view)
+	var view := (MODELS[kind][size_index] as PackedScene).instantiate()
+	view.name = "View"
+	add_child(view)
 
 
 ## Опоры фундамента (BLD-1.5): столбы в углах плиты от её низа вниз до грунта. Где грунт не ниже
 ## низа плиты, опоры нет. Деталь уже стоит в мире; рельеф не меняется.
-func grow_supports() -> void:
+## Призрак зовёт это после каждого сдвига, без коллизии (solid = false): прежние столбы заменяются.
+## Поставленная деталь зовёт один раз, с коллизией.
+func grow_supports(solid := true) -> void:
+	for child in get_children():
+		if String(child.name).begins_with("Support"):
+			remove_child(child)
+			child.free()
 	var f := footprint(kind, size_index)
 	var space := get_world_3d().direct_space_state
-	var material := StandardMaterial3D.new()
-	material.albedo_color = COLORS[kind]
 	for sx in [-1.0, 1.0]:
 		for sz in [-1.0, 1.0]:
 			var top := Vector3(sx * (f.x - SUPPORT) / 2.0, -SLAB, sz * (f.y - SUPPORT) / 2.0)
@@ -137,30 +143,13 @@ func grow_supports() -> void:
 			var length: float = to_global(top).y - float(ground)
 			if length <= 0.0:
 				continue
-			var s := _box(top + Vector3.DOWN * length / 2.0, Vector3(SUPPORT, length, SUPPORT), Vector3.ZERO)
-			var collision := CollisionShape3D.new()
-			collision.shape = s[0]
-			collision.transform = s[1]
-			add_child(collision)
-			var mesh := BoxMesh.new()
-			mesh.size = (s[0] as BoxShape3D).size
-			mesh.material = material
-			var view := MeshInstance3D.new()
-			view.name = "Support"
-			view.mesh = mesh
-			view.transform = s[1]
-			add_child(view, true)
-
-
-func _add_steps(material: StandardMaterial3D) -> void:
-	var f := footprint(kind, size_index)
-	var depth := f.y / STAIRS_STEPS
-	var rise := STAIRS_RISE / STAIRS_STEPS
-	for i in STAIRS_STEPS:
-		var mesh := BoxMesh.new()
-		mesh.size = Vector3(f.x, rise * (i + 1), depth)
-		mesh.material = material
-		var view := MeshInstance3D.new()
-		view.mesh = mesh
-		view.position = Vector3(0, rise * (i + 1) / 2.0, f.y / 2.0 - depth * (i + 0.5))
-		add_child(view)
+			if solid:
+				var s := _box(top + Vector3.DOWN * length / 2.0, Vector3(SUPPORT, length, SUPPORT), Vector3.ZERO)
+				var collision := CollisionShape3D.new()
+				collision.shape = s[0]
+				collision.transform = s[1]
+				add_child(collision)
+			var post := POST.instantiate() as Node3D
+			post.name = "Support"
+			post.transform = Transform3D(Basis.from_scale(Vector3(1.0, length, 1.0)), top)
+			add_child(post, true)

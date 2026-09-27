@@ -156,15 +156,21 @@ func ghost_yaw() -> float:
 	return atan2(-forward.x, -forward.z)
 
 
-## Размер призрака по его осям: x — длина, z — ширина, y — высота.
+## Размер призрака по его осям: x — длина, z — ширина, y — высота. Габарит выбранного вида и размера:
+## вид детали — модель с декором вроде выступающей перемычки, поэтому размер берётся не из мешей.
 func ghost_size() -> Vector3:
-	var total := AABB()
-	var first := true
-	for child in _ghost_meshes():
-		var box := child.transform * child.get_aabb()
-		total = box if first else total.merge(box)
-		first = false
-	return total.size
+	var ghost := _ghost_node()
+	if ghost is BuildPart:
+		return BuildPart.local_bounds((ghost as BuildPart).kind, (ghost as BuildPart).size_index).size
+	if ghost is BuildItem:
+		return BuildItem.size_of((ghost as BuildItem).kind)
+	return Vector3.ZERO
+
+
+## Опоры призрака фундамента: верх и низ каждого видимого столба в мире.
+func ghost_supports() -> Array[Dictionary]:
+	var ghost := _ghost_node()
+	return _supports_of(ghost) if ghost else ([] as Array[Dictionary])
 
 
 func building_count() -> int:
@@ -207,16 +213,7 @@ func building_yaw(building := 0) -> float:
 
 ## Опоры фундамента: верх и низ каждого столба в мире, как их видит игрок.
 func supports(part: int, building := 0) -> Array[Dictionary]:
-	var result: Array[Dictionary] = []
-	for child in _builder.buildings()[building].parts()[part].get_children():
-		if child is MeshInstance3D and String(child.name).begins_with("Support"):
-			var box: AABB = child.global_transform * (child as MeshInstance3D).get_aabb()
-			var middle := box.get_center()
-			result.append({
-				"top": Vector3(middle.x, box.end.y, middle.z),
-				"bottom": Vector3(middle.x, box.position.y, middle.z),
-			})
-	return result
+	return _supports_of(_builder.buildings()[building].parts()[part])
 
 
 ## Вертикаль сетки постройки в мире: у горизонтальной сетки — вверх.
@@ -236,13 +233,29 @@ func items() -> Array[Dictionary]:
 	return result
 
 
-func _ghost_meshes() -> Array[MeshInstance3D]:
-	var result: Array[MeshInstance3D] = []
+## Видимый призрак: деталь или предмет строителя без слоя столкновений; null, если его нет.
+func _ghost_node() -> Node3D:
 	var ghost := _builder.get_children().filter(func(c): return (c is BuildPart or c is BuildItem) and c.visible and c.collision_layer == 0)
-	if not ghost.is_empty():
-		for child in (ghost[0] as Node).get_children():
-			if child is MeshInstance3D:
-				result.append(child)
+	return null if ghost.is_empty() else ghost[0]
+
+
+## Столбы опор узла: габарит мешей каждой модели опоры в мире — её верх и низ по оси.
+func _supports_of(part: Node3D) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for child in part.get_children():
+		if not String(child.name).begins_with("Support"):
+			continue
+		var box := AABB()
+		var first := true
+		for mesh in (child as Node).find_children("*", "MeshInstance3D", true, false):
+			var b: AABB = (mesh as MeshInstance3D).global_transform * (mesh as MeshInstance3D).get_aabb()
+			box = b if first else box.merge(b)
+			first = false
+		var middle := box.get_center()
+		result.append({
+			"top": Vector3(middle.x, box.end.y, middle.z),
+			"bottom": Vector3(middle.x, box.position.y, middle.z),
+		})
 	return result
 
 

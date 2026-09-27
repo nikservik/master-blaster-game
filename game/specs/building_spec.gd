@@ -253,6 +253,34 @@ func test_BLD_S19_second_foundation_on_slope_keeps_height_with_longer_supports()
 	assert_float(_longest_support(1)).is_greater(_longest_support(0) + 0.2)
 
 
+## BLD-1.5, BLD-3.2
+func test_BLD_S20_foundation_ghost_on_slope_shows_supports_as_placed() -> void:
+	# Given: режим строительства на склоне, выбран фундамент
+	await hero.begin_on_start()
+	await builder.begin_empty()
+	await hero.stand_at(SLOPE_SPOT)
+	await hero.look_along(Vector3(1, 0, 0))
+	await builder.enter_build_mode()
+	await builder.choose_foundation()
+	# When: прицел на склон
+	await builder.aim_at(level.on_slope(SLOPE_SPOT + Vector3(4.5, 0, 0)))
+	# Then: у призрака видны опоры, их низ на грунте
+	assert_bool(builder.ghost_visible()).is_true()
+	var ghost_supports := builder.ghost_supports()
+	assert_int(ghost_supports.size()).is_greater_equal(2)
+	for s in ghost_supports:
+		assert_float(s.bottom.y).is_equal_approx(level.slope_height(s.bottom), 0.03)
+		assert_float(s.top.y - s.bottom.y).is_greater(0.05)
+	# When: ставим
+	await builder.place()
+	# Then: опоры детали совпадают с опорами призрака
+	var placed := builder.supports(0)
+	assert_int(placed.size()).is_equal(ghost_supports.size())
+	for s in ghost_supports:
+		var same := placed.filter(func(p): return p.top.distance_to(s.top) < 0.01 and p.bottom.distance_to(s.bottom) < 0.01)
+		assert_int(same.size()).is_equal(1)
+
+
 # --- BLD-2 Детали --------------------------------------------------------
 
 ## BLD-2.2, BLD-3.1

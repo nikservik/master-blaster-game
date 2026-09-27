@@ -117,3 +117,52 @@ func test_ground_skips_buildings_and_supports_stop_at_ground() -> void:
 	assert_float(Building.ground_height(space, Vector3(1, 5, 1), 10.0)).is_equal_approx(0.0, 0.001)
 	assert_float(Building.ground_height(space, Vector3(0.1, 5, 0.1), 10.0)).is_equal_approx(0.0, 0.001)
 	assert_object(Building.ground_height(space, Vector3(1, 5, 1), 2.0)).is_null()
+
+
+## Габарит всех мешей узла в его координатах.
+func _view_bounds(node: Node3D) -> AABB:
+	var total := AABB()
+	var first := true
+	for mesh in node.find_children("*", "MeshInstance3D", true, false):
+		var box: AABB = node.global_transform.affine_inverse() * (mesh as MeshInstance3D).global_transform * (mesh as MeshInstance3D).get_aabb()
+		total = box if first else total.merge(box)
+		first = false
+	return total
+
+
+func test_models_fit_part_and_item_bounds_and_ghost_paints_every_mesh() -> void:
+	var builder := auto_free(Builder.new()) as Builder
+	add_child(builder)
+	builder.set_physics_process(false)
+	for kind in BuildPart.SIZES:
+		for size in BuildPart.SIZES[kind].size():
+			var part := BuildPart.new()
+			part.setup(kind, size, true)
+			builder.add_child(part)
+			# Модель стоит в координатах детали: её габарит — габарит детали; перемычка проёма выступает на 2 см
+			var bounds := BuildPart.local_bounds(kind, size)
+			var view := _view_bounds(part)
+			assert_vector(view.position).is_equal_approx(bounds.position, Vector3.ONE * 0.03)
+			assert_vector(view.end).is_equal_approx(bounds.end, Vector3.ONE * 0.03)
+			if kind == K.STAIRS:
+				# Лестница модели поднимается к −Z, как клин коллизии: верхние вершины — у −Z
+				var mesh := part.find_children("*", "MeshInstance3D", true, false)[0] as MeshInstance3D
+				for v: Vector3 in mesh.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]:
+					if v.y > BuildPart.STAIRS_RISE - 0.1:
+						assert_float(v.z).is_less(-1.5)
+			# Призрак красит все меши glTF, включая вложенные, полупрозрачным материалом
+			builder._paint_ghost(part)
+			for mesh in part.find_children("*", "MeshInstance3D", true, false):
+				var material := (mesh as MeshInstance3D).material_override as BaseMaterial3D
+				assert_object(material).is_not_null()
+				assert_int(material.transparency).is_equal(BaseMaterial3D.TRANSPARENCY_ALPHA)
+			part.free()
+	for kind in [BuildItem.Kind.BOX, BuildItem.Kind.TABLE]:
+		var item := BuildItem.new()
+		item.setup(kind, true)
+		builder.add_child(item)
+		var view := _view_bounds(item)
+		var size := BuildItem.size_of(kind)
+		assert_vector(view.position).is_equal_approx(Vector3(-size.x / 2.0, 0, -size.z / 2.0), Vector3.ONE * 0.01)
+		assert_vector(view.end).is_equal_approx(Vector3(size.x / 2.0, size.y, size.z / 2.0), Vector3.ONE * 0.01)
+		item.free()
