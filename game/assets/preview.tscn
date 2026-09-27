@@ -1,0 +1,331 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://assets/character/hero.glb" id="m1"]
+[ext_resource type="PackedScene" path="res://assets/building/floor_1x1.gltf" id="m2"]
+[ext_resource type="PackedScene" path="res://assets/building/floor_2x1.gltf" id="m3"]
+[ext_resource type="PackedScene" path="res://assets/building/floor_2x2.gltf" id="m4"]
+[ext_resource type="PackedScene" path="res://assets/building/foundation_1x1.gltf" id="m5"]
+[ext_resource type="PackedScene" path="res://assets/building/foundation_2x1.gltf" id="m6"]
+[ext_resource type="PackedScene" path="res://assets/building/foundation_2x2.gltf" id="m7"]
+[ext_resource type="PackedScene" path="res://assets/building/post_1m.gltf" id="m8"]
+[ext_resource type="PackedScene" path="res://assets/building/stairs_2x4.gltf" id="m9"]
+[ext_resource type="PackedScene" path="res://assets/building/wall_1m.gltf" id="m10"]
+[ext_resource type="PackedScene" path="res://assets/building/wall_2m.gltf" id="m11"]
+[ext_resource type="PackedScene" path="res://assets/building/wall_door_2m.gltf" id="m12"]
+[ext_resource type="PackedScene" path="res://assets/ruins/arch.gltf" id="m13"]
+[ext_resource type="PackedScene" path="res://assets/ruins/column.gltf" id="m14"]
+[ext_resource type="PackedScene" path="res://assets/ruins/column_broken.gltf" id="m15"]
+[ext_resource type="PackedScene" path="res://assets/ruins/column_magitech.gltf" id="m16"]
+[ext_resource type="PackedScene" path="res://assets/ruins/debris_block.gltf" id="m17"]
+[ext_resource type="PackedScene" path="res://assets/ruins/debris_drum.gltf" id="m18"]
+[ext_resource type="PackedScene" path="res://assets/ruins/debris_pile.gltf" id="m19"]
+[ext_resource type="PackedScene" path="res://assets/ruins/debris_slab.gltf" id="m20"]
+[ext_resource type="PackedScene" path="res://assets/ruins/floor_slab.gltf" id="m21"]
+[ext_resource type="PackedScene" path="res://assets/ruins/magitech_panel.gltf" id="m22"]
+[ext_resource type="PackedScene" path="res://assets/ruins/obelisk_magitech.gltf" id="m23"]
+[ext_resource type="PackedScene" path="res://assets/ruins/stairs.gltf" id="m24"]
+[ext_resource type="PackedScene" path="res://assets/ruins/wall.gltf" id="m25"]
+[ext_resource type="PackedScene" path="res://assets/ruins/wall_broken.gltf" id="m26"]
+[ext_resource type="PackedScene" path="res://assets/ruins/wall_stepped.gltf" id="m27"]
+[ext_resource type="PackedScene" path="res://assets/vegetation/bush.gltf" id="m28"]
+[ext_resource type="PackedScene" path="res://assets/vegetation/bush_flowers.gltf" id="m29"]
+[ext_resource type="PackedScene" path="res://assets/vegetation/clover.gltf" id="m30"]
+[ext_resource type="PackedScene" path="res://assets/vegetation/fern.gltf" id="m31"]
+[ext_resource type="PackedScene" path="res://assets/vegetation/grass_short.gltf" id="m32"]
+[ext_resource type="PackedScene" path="res://assets/vegetation/grass_tall.gltf" id="m33"]
+[ext_resource type="PackedScene" path="res://assets/vegetation/grass_wispy_short.gltf" id="m34"]
+[ext_resource type="PackedScene" path="res://assets/vegetation/grass_wispy_tall.gltf" id="m35"]
+[ext_resource type="PackedScene" path="res://assets/vegetation/palm_1.gltf" id="m36"]
+[ext_resource type="PackedScene" path="res://assets/vegetation/palm_2.gltf" id="m37"]
+[ext_resource type="PackedScene" path="res://assets/vegetation/palm_3.gltf" id="m38"]
+[ext_resource type="PackedScene" path="res://assets/vegetation/plant_big.gltf" id="m39"]
+[ext_resource type="PackedScene" path="res://assets/vegetation/plant_small.gltf" id="m40"]
+[ext_resource type="PackedScene" path="res://assets/vegetation/vine_1.gltf" id="m41"]
+[ext_resource type="PackedScene" path="res://assets/vegetation/vine_2.gltf" id="m42"]
+[ext_resource type="PackedScene" path="res://assets/vegetation/vine_3.gltf" id="m43"]
+[ext_resource type="PackedScene" path="res://assets/vegetation/vine_4.gltf" id="m44"]
+[ext_resource type="PackedScene" path="res://assets/vegetation/vine_5.gltf" id="m45"]
+[ext_resource type="PackedScene" path="res://assets/vegetation/vine_6.gltf" id="m46"]
+[ext_resource type="PackedScene" path="res://assets/rocks/pebble_round_1.gltf" id="m47"]
+[ext_resource type="PackedScene" path="res://assets/rocks/pebble_round_2.gltf" id="m48"]
+[ext_resource type="PackedScene" path="res://assets/rocks/pebble_square_1.gltf" id="m49"]
+[ext_resource type="PackedScene" path="res://assets/rocks/pebble_square_2.gltf" id="m50"]
+[ext_resource type="PackedScene" path="res://assets/rocks/plateau_desert.gltf" id="m51"]
+[ext_resource type="PackedScene" path="res://assets/rocks/rock_1.gltf" id="m52"]
+[ext_resource type="PackedScene" path="res://assets/rocks/rock_2.gltf" id="m53"]
+[ext_resource type="PackedScene" path="res://assets/rocks/rock_3.gltf" id="m54"]
+[ext_resource type="PackedScene" path="res://assets/rocks/rock_desert_1.gltf" id="m55"]
+[ext_resource type="PackedScene" path="res://assets/rocks/rock_desert_2.gltf" id="m56"]
+[ext_resource type="PackedScene" path="res://assets/rocks/rock_desert_3.gltf" id="m57"]
+[ext_resource type="PackedScene" path="res://assets/props/crate.gltf" id="m58"]
+[ext_resource type="PackedScene" path="res://assets/props/table.gltf" id="m59"]
+[ext_resource type="Texture2D" path="res://assets/sky/wasteland_clouds_puresky_2k.hdr" id="sky"]
+[ext_resource type="Texture2D" path="res://assets/terrain/sand/aerial_beach_01_diff_1k.jpg" id="td1"]
+[ext_resource type="Texture2D" path="res://assets/terrain/sand/aerial_beach_01_nor_gl_1k.jpg" id="tn1"]
+[ext_resource type="Texture2D" path="res://assets/terrain/grass/aerial_grass_rock_diff_1k.jpg" id="td2"]
+[ext_resource type="Texture2D" path="res://assets/terrain/grass/aerial_grass_rock_nor_gl_1k.jpg" id="tn2"]
+[ext_resource type="Texture2D" path="res://assets/terrain/rock/sandstone_cracks_diff_1k.jpg" id="td3"]
+[ext_resource type="Texture2D" path="res://assets/terrain/rock/sandstone_cracks_nor_gl_1k.jpg" id="tn3"]
+[ext_resource type="Texture2D" path="res://assets/terrain/dirt/dirt_diff_1k.jpg" id="td4"]
+[ext_resource type="Texture2D" path="res://assets/terrain/dirt/dirt_nor_gl_1k.jpg" id="tn4"]
+
+[sub_resource type="PanoramaSkyMaterial" id="skymat"]
+panorama = ExtResource("sky")
+
+[sub_resource type="Sky" id="skyres"]
+sky_material = SubResource("skymat")
+
+[sub_resource type="Environment" id="env"]
+background_mode = 2
+sky = SubResource("skyres")
+tonemap_mode = 4
+glow_enabled = true
+ssao_enabled = true
+
+[sub_resource type="StandardMaterial3D" id="tm1"]
+albedo_texture = ExtResource("td1")
+normal_enabled = true
+normal_texture = ExtResource("tn1")
+uv1_triplanar = true
+uv1_scale = Vector3(0.25, 0.25, 0.25)
+
+[sub_resource type="PlaneMesh" id="tp1"]
+material = SubResource("tm1")
+size = Vector2(8, 8)
+
+[sub_resource type="StandardMaterial3D" id="tm2"]
+albedo_texture = ExtResource("td2")
+normal_enabled = true
+normal_texture = ExtResource("tn2")
+uv1_triplanar = true
+uv1_scale = Vector3(0.25, 0.25, 0.25)
+
+[sub_resource type="PlaneMesh" id="tp2"]
+material = SubResource("tm2")
+size = Vector2(8, 8)
+
+[sub_resource type="StandardMaterial3D" id="tm3"]
+albedo_texture = ExtResource("td3")
+normal_enabled = true
+normal_texture = ExtResource("tn3")
+uv1_triplanar = true
+uv1_scale = Vector3(0.25, 0.25, 0.25)
+
+[sub_resource type="PlaneMesh" id="tp3"]
+material = SubResource("tm3")
+size = Vector2(8, 8)
+
+[sub_resource type="StandardMaterial3D" id="tm4"]
+albedo_texture = ExtResource("td4")
+normal_enabled = true
+normal_texture = ExtResource("tn4")
+uv1_triplanar = true
+uv1_scale = Vector3(0.25, 0.25, 0.25)
+
+[sub_resource type="PlaneMesh" id="tp4"]
+material = SubResource("tm4")
+size = Vector2(8, 8)
+
+[node name="AssetPreview" type="Node3D"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("env")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.707107, -0.40558, 0.579228, 0, 0.819152, 0.573576, -0.707107, -0.40558, 0.579228, 0, 10, 0)
+light_color = Color(1, 0.86, 0.68, 1)
+shadow_enabled = true
+
+[node name="Terrain_sand" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -12)
+mesh = SubResource("tp1")
+
+[node name="Terrain_grass" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0, -12)
+mesh = SubResource("tp2")
+
+[node name="Terrain_rock" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18, 0, -12)
+mesh = SubResource("tp3")
+
+[node name="Terrain_dirt" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 27, 0, -12)
+mesh = SubResource("tp4")
+
+[node name="character_hero" parent="." instance=ExtResource("m1")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 10)
+
+[node name="building_floor_1x1" parent="." instance=ExtResource("m2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 20)
+
+[node name="building_floor_2x1" parent="." instance=ExtResource("m3")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0, 20)
+
+[node name="building_floor_2x2" parent="." instance=ExtResource("m4")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0, 20)
+
+[node name="building_foundation_1x1" parent="." instance=ExtResource("m5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 0, 20)
+
+[node name="building_foundation_2x1" parent="." instance=ExtResource("m6")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 0, 20)
+
+[node name="building_foundation_2x2" parent="." instance=ExtResource("m7")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, 0, 20)
+
+[node name="building_post_1m" parent="." instance=ExtResource("m8")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30, 0, 20)
+
+[node name="building_stairs_2x4" parent="." instance=ExtResource("m9")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 35, 0, 20)
+
+[node name="building_wall_1m" parent="." instance=ExtResource("m10")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 40, 0, 20)
+
+[node name="building_wall_2m" parent="." instance=ExtResource("m11")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 45, 0, 20)
+
+[node name="building_wall_door_2m" parent="." instance=ExtResource("m12")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 50, 0, 20)
+
+[node name="ruins_arch" parent="." instance=ExtResource("m13")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 30)
+
+[node name="ruins_column" parent="." instance=ExtResource("m14")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0, 30)
+
+[node name="ruins_column_broken" parent="." instance=ExtResource("m15")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0, 30)
+
+[node name="ruins_column_magitech" parent="." instance=ExtResource("m16")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 0, 30)
+
+[node name="ruins_debris_block" parent="." instance=ExtResource("m17")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 0, 30)
+
+[node name="ruins_debris_drum" parent="." instance=ExtResource("m18")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, 0, 30)
+
+[node name="ruins_debris_pile" parent="." instance=ExtResource("m19")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30, 0, 30)
+
+[node name="ruins_debris_slab" parent="." instance=ExtResource("m20")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 35, 0, 30)
+
+[node name="ruins_floor_slab" parent="." instance=ExtResource("m21")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 40, 0, 30)
+
+[node name="ruins_magitech_panel" parent="." instance=ExtResource("m22")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 45, 0, 30)
+
+[node name="ruins_obelisk_magitech" parent="." instance=ExtResource("m23")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 50, 0, 30)
+
+[node name="ruins_stairs" parent="." instance=ExtResource("m24")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 55, 0, 30)
+
+[node name="ruins_wall" parent="." instance=ExtResource("m25")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 60, 0, 30)
+
+[node name="ruins_wall_broken" parent="." instance=ExtResource("m26")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 65, 0, 30)
+
+[node name="ruins_wall_stepped" parent="." instance=ExtResource("m27")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 70, 0, 30)
+
+[node name="vegetation_bush" parent="." instance=ExtResource("m28")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 40)
+
+[node name="vegetation_bush_flowers" parent="." instance=ExtResource("m29")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0, 40)
+
+[node name="vegetation_clover" parent="." instance=ExtResource("m30")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0, 40)
+
+[node name="vegetation_fern" parent="." instance=ExtResource("m31")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 0, 40)
+
+[node name="vegetation_grass_short" parent="." instance=ExtResource("m32")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 0, 40)
+
+[node name="vegetation_grass_tall" parent="." instance=ExtResource("m33")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, 0, 40)
+
+[node name="vegetation_grass_wispy_short" parent="." instance=ExtResource("m34")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30, 0, 40)
+
+[node name="vegetation_grass_wispy_tall" parent="." instance=ExtResource("m35")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 35, 0, 40)
+
+[node name="vegetation_palm_1" parent="." instance=ExtResource("m36")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 40, 0, 40)
+
+[node name="vegetation_palm_2" parent="." instance=ExtResource("m37")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 45, 0, 40)
+
+[node name="vegetation_palm_3" parent="." instance=ExtResource("m38")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 50, 0, 40)
+
+[node name="vegetation_plant_big" parent="." instance=ExtResource("m39")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 55, 0, 40)
+
+[node name="vegetation_plant_small" parent="." instance=ExtResource("m40")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 60, 0, 40)
+
+[node name="vegetation_vine_1" parent="." instance=ExtResource("m41")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 65, 0, 40)
+
+[node name="vegetation_vine_2" parent="." instance=ExtResource("m42")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 70, 0, 40)
+
+[node name="vegetation_vine_3" parent="." instance=ExtResource("m43")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 75, 0, 40)
+
+[node name="vegetation_vine_4" parent="." instance=ExtResource("m44")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 80, 0, 40)
+
+[node name="vegetation_vine_5" parent="." instance=ExtResource("m45")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 85, 0, 40)
+
+[node name="vegetation_vine_6" parent="." instance=ExtResource("m46")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 90, 0, 40)
+
+[node name="rocks_pebble_round_1" parent="." instance=ExtResource("m47")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 50)
+
+[node name="rocks_pebble_round_2" parent="." instance=ExtResource("m48")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0, 50)
+
+[node name="rocks_pebble_square_1" parent="." instance=ExtResource("m49")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0, 50)
+
+[node name="rocks_pebble_square_2" parent="." instance=ExtResource("m50")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 0, 50)
+
+[node name="rocks_plateau_desert" parent="." instance=ExtResource("m51")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 0, 50)
+
+[node name="rocks_rock_1" parent="." instance=ExtResource("m52")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, 0, 50)
+
+[node name="rocks_rock_2" parent="." instance=ExtResource("m53")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30, 0, 50)
+
+[node name="rocks_rock_3" parent="." instance=ExtResource("m54")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 35, 0, 50)
+
+[node name="rocks_rock_desert_1" parent="." instance=ExtResource("m55")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 40, 0, 50)
+
+[node name="rocks_rock_desert_2" parent="." instance=ExtResource("m56")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 45, 0, 50)
+
+[node name="rocks_rock_desert_3" parent="." instance=ExtResource("m57")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 50, 0, 50)
+
+[node name="props_crate" parent="." instance=ExtResource("m58")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 60)
+
+[node name="props_table" parent="." instance=ExtResource("m59")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0, 60)
+
