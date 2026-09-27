@@ -69,8 +69,12 @@ const SKIN_DEPTH := 1.0
 const SKIN_MARGIN := 0.5
 const AUTOSAVE_SECONDS := 60.0
 
+## Версия формы мира. Хранилище пишет блоки целиком, и блоки, сохранённые при другой форме генератора, дают швы
+## с новыми соседями. Изменил форму нетронутого рельефа — увеличь версию: игра начнёт новый файл, старый останется.
+const GENERATOR_VERSION := 2
+
 ## Файл хранилища правок. Задаётся до добавления в дерево; спеки пишут во временный каталог.
-@export var save_path := "user://terrain.sqlite"
+@export var save_path := "user://terrain_v%d.sqlite" % GENERATOR_VERSION
 
 ## Последнее запущенное сохранение: запись идёт в потоках, это его отметка готовности.
 var last_save: VoxelSaveCompletionTracker
