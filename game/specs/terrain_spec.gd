@@ -12,6 +12,7 @@ const LevelDriver := preload("res://specs/drivers/level_driver.gd")
 const GRASS := WorldTerrain.Ground.GRASS
 const STONE := WorldTerrain.Ground.STONE
 const DIRT := WorldTerrain.Ground.DIRT
+const WET_SAND := WorldTerrain.Ground.WET_SAND
 const RADIUS := 1.5
 ## Ровный грунт у руин: верх пола руин — 40 м, грунт вокруг на 0,1 м ниже.
 const GROUND_Y := 39.9
@@ -481,3 +482,30 @@ func test_TER_S19_digging_removes_plants_left_hanging_over_the_pit(
 	await terrain.settle()
 	assert_int(terrain.plants_count()).is_equal(after)
 	assert_float(at.y).is_greater(terrain.sea_y())
+
+
+## TER-1.2
+func test_TER_S20_on_beach_shallow_pit_is_wet_sand_deeper_is_dirt_on_grass_dirt_at_once() -> void:
+	# Given: герой на пляже выше кромки воды
+	var x := WorldTerrain.FLAT_CENTER.x - 8.0
+	var at := await _given_on_ground(x, _waterline_z(x) - 12.0, Vector3.BACK)
+	var surface := terrain.surface_y(at.x, at.z + 3.0)
+	var pit := Vector3(at.x, surface + 1.0, at.z + 3.0)
+	# When: выкопана неглубокая ямка — дно на 0,5 м ниже поверхности
+	await terrain.dug_pit(pit)
+	# Then: дно и стенка — влажный песок
+	var bottom := pit + Vector3.DOWN * RADIUS
+	assert_int(terrain.ground_hit_by(bottom + Vector3.UP, bottom + Vector3.DOWN)).is_equal(WET_SAND)
+	var wall_level := Vector3(pit.x, surface - 0.3, pit.z)
+	assert_int(terrain.ground_hit_by(wall_level, wall_level + Vector3.RIGHT * 3.0)).is_equal(WET_SAND)
+	# When: яму углубили — дно на 3 м ниже поверхности
+	await terrain.dug_pit(Vector3(pit.x, surface - 1.5, pit.z))
+	# Then: дно — земля
+	assert_int(terrain.ground_hit_by(Vector3(pit.x, surface - 2.0, pit.z), Vector3(pit.x, surface - 4.0, pit.z))).is_equal(DIRT)
+	# When: на траве у руин выкопана такая же неглубокая ямка
+	var on_grass := await _given_on_ground(-14, -6, Vector3.FORWARD)
+	var grass_pit := Vector3(on_grass.x, GROUND_Y + 1.0, on_grass.z - 4.0)
+	await terrain.dug_pit(grass_pit)
+	# Then: её дно — сразу земля
+	var grass_bottom := grass_pit + Vector3.DOWN * RADIUS
+	assert_int(terrain.ground_hit_by(grass_bottom + Vector3.UP, grass_bottom + Vector3.DOWN)).is_equal(DIRT)

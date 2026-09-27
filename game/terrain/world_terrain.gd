@@ -5,13 +5,15 @@ extends VoxelLodTerrain
 ## сохранение изменённых блоков в SQLite при выходе и раз в минуту.
 
 ## Грунт, который видит игрок.
-enum Ground { GRASS, STONE, DIRT, SAND }
+enum Ground { GRASS, STONE, DIRT, SAND, WET_SAND }
 
 ## Индекс текстуры в канале INDICES. SURFACE — поверхность, как её создал генератор:
-## трава на пологом, камень на крутом. STONE — камень независимо от уклона, DIRT — тронутый героем грунт.
+## трава на пологом, камень на крутом. STONE — камень независимо от уклона, DIRT — тронутый героем грунт,
+## WET_SAND — тронутый героем грунт пляжа у поверхности.
 const INDEX_SURFACE := 0
 const INDEX_STONE := 1
 const INDEX_DIRT := 2
+const INDEX_WET_SAND := 3
 
 ## Трава — где нормаль поверхности SURFACE круче этого значения вверх; шейдер смешивает в полосе ±GRASS_BLEND.
 const GRASS_MIN_NORMAL_Y := 0.78
@@ -52,8 +54,12 @@ const SAND_BLEND := 0.8
 const COVER_HEIGHTS: Array[float] = [3.0, 6.0, 9.0]
 
 const BRUSH_RADIUS := 1.5
-## Грунт в этом радиусе вокруг шара становится землёй: стенки ямы и насыпь.
+## Грунт в этом радиусе вокруг шара становится землёй или влажным песком: стенки ямы и насыпь.
 const DIRT_RADIUS := BRUSH_RADIUS + 1.0
+## На пляже тронутый грунт не глубже этого от исходной поверхности — влажный песок (TER-1.2).
+const WET_SAND_DEPTH := 1.5
+## Исходную поверхность для окраски ищут в столбце ± столько метров от центра правки.
+const GENERATED_REACH := 16
 const AUTOSAVE_SECONDS := 60.0
 
 ## Файл хранилища правок. Задаётся до добавления в дерево; спеки пишут во временный каталог.
@@ -129,28 +135,59 @@ func _save_and_quit() -> void:
 
 # --- Правка --------------------------------------------------------------
 
-## Убрать шар грунта; стенки ямы становятся землёй.
+## Убрать шар грунта; стенки ямы становятся землёй, на пляже у поверхности — влажным песком.
 func dig(center: Vector3) -> void:
 	_tool.mode = VoxelTool.MODE_REMOVE
 	_tool.do_sphere(center, BRUSH_RADIUS)
 	_paint_dirt(center)
 
 
-## Насыпать шар грунта; насыпь — земля.
+## Насыпать шар грунта; насыпь — земля, на пляже у поверхности — влажный песок.
 func fill(center: Vector3) -> void:
 	_tool.mode = VoxelTool.MODE_ADD
 	_tool.do_sphere(center, BRUSH_RADIUS)
 	_paint_dirt(center)
 
 
-
-
+## Красит тронутый грунт вокруг шара: на пляже не глубже WET_SAND_DEPTH от исходной поверхности —
+## влажный песок, глубже и вне пляжа — земля. Исходную поверхность даёт генератор.
 func _paint_dirt(center: Vector3) -> void:
 	_tool.channel = VoxelBuffer.CHANNEL_INDICES
-	_tool.mode = VoxelTool.MODE_SET
-	_tool.value = INDEX_DIRT
-	_tool.do_sphere(center, DIRT_RADIUS)
+	var reach := ceili(DIRT_RADIUS)
+	var middle := Vector3i(center.round())
+	for dx in range(-reach, reach + 1):
+		for dz in range(-reach, reach + 1):
+			var surface := NAN
+			for dy in range(-reach, reach + 1):
+				var voxel := middle + Vector3i(dx, dy, dz)
+				if Vector3(voxel).distance_to(center) > DIRT_RADIUS:
+					continue
+				if is_nan(surface):
+					surface = _generated_surface_y(voxel.x, voxel.z, center.y)
+				_tool.set_voxel(voxel, touched_index(voxel.y, surface))
 	_tool.channel = VoxelBuffer.CHANNEL_SDF
+
+
+## Индекс тронутого грунта на высоте y в столбце с исходной поверхностью surface.
+static func touched_index(y: float, surface: float) -> int:
+	if surface < SAND_TOP and surface - y <= WET_SAND_DEPTH:
+		return INDEX_WET_SAND
+	return INDEX_DIRT
+
+
+## Верх нетронутого рельефа в столбце (x, z) в пределах GENERATED_REACH м от высоты near; NAN — не нашёлся.
+func _generated_surface_y(x: int, z: int, near: float) -> float:
+	var buffer := VoxelBuffer.new()
+	buffer.create(1, GENERATED_REACH * 2, 1)
+	buffer.set_channel_depth(VoxelBuffer.CHANNEL_INDICES, VoxelBuffer.DEPTH_8_BIT)
+	var bottom := roundi(near) - GENERATED_REACH
+	generator.generate_block(buffer, Vector3i(x, bottom, z), 0)
+	for i in range(GENERATED_REACH * 2 - 2, -1, -1):
+		var below := buffer.get_voxel_f(0, i, 0, VoxelBuffer.CHANNEL_SDF)
+		var above := buffer.get_voxel_f(0, i + 1, 0, VoxelBuffer.CHANNEL_SDF)
+		if below < 0.0 and above >= 0.0:
+			return bottom + i + below / (below - above)
+	return NAN
 
 
 # --- Наблюдаемое состояние -----------------------------------------------
@@ -170,6 +207,8 @@ func ground_at(point: Vector3, normal: Vector3) -> Ground:
 
 ## Грунт по индексу текстуры вокселя, нормали и высоте поверхности — правило шейдера рельефа.
 static func ground_of(index: int, normal: Vector3, height := INF) -> Ground:
+	if index == INDEX_WET_SAND:
+		return Ground.WET_SAND
 	if index == INDEX_DIRT:
 		return Ground.DIRT
 	if index == INDEX_STONE or normal.y < GRASS_MIN_NORMAL_Y:
