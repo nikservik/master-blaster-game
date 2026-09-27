@@ -1,0 +1,17 @@
+[gd_scene format=3]
+
+[ext_resource type="Shader" path="res://world/sea.gdshader" id="1_sea"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_sea"]
+render_priority = 0
+shader = ExtResource("1_sea")
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_sea"]
+material = SubResource("ShaderMaterial_sea")
+size = Vector2(1024, 1024)
+subdivide_width = 256
+subdivide_depth = 256
+
+[node name="Sea" type="MeshInstance3D"]
+cast_shadow = 0
+mesh = SubResource("PlaneMesh_sea")

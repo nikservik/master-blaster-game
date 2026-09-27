@@ -5,7 +5,7 @@ extends VoxelLodTerrain
 ## сохранение изменённых блоков в SQLite при выходе и раз в минуту.
 
 ## Грунт, который видит игрок.
-enum Ground { GRASS, STONE, DIRT }
+enum Ground { GRASS, STONE, DIRT, SAND }
 
 ## Индекс текстуры в канале INDICES. SURFACE — поверхность, как её создал генератор:
 ## трава на пологом, камень на крутом. STONE — камень независимо от уклона, DIRT — тронутый героем грунт.
@@ -37,6 +37,16 @@ const CLIFF_WARP := 8.0
 ## Пол и стены пещер — камень: грунт глубже высоты по карте больше чем на CAVE_DEPTH
 ## или с твёрдым грунтом на одной из высот COVER_HEIGHTS над ним — под навесом.
 const CAVE_DEPTH := 2.5
+## Море: уровень воды. От руин к югу (+Z) берег спускается в бухту: доля берега растёт от COAST_START_Z
+## на COAST_LENGTH м, дно — SEABED_Y. Линия берега изогнута: по краям бухта начинается дальше на (x − центр)² × BAY_CURVE.
+const SEA_Y := 33.0
+const COAST_START_Z := 24.0
+const COAST_LENGTH := 100.0
+const SEABED_Y := 18.0
+const BAY_CURVE := 0.004
+## Поверхность ниже этой высоты — песок пляжа, на пологом.
+const SAND_TOP := SEA_Y + 2.5
+const SAND_BLEND := 0.8
 const COVER_HEIGHTS: Array[float] = [3.0, 6.0, 9.0]
 
 const BRUSH_RADIUS := 1.5
@@ -151,15 +161,17 @@ func ground_at(point: Vector3, normal: Vector3) -> Ground:
 	_tool.channel = VoxelBuffer.CHANNEL_INDICES
 	var index := _tool.get_voxel(Vector3i((point - normal * 0.5).round()))
 	_tool.channel = VoxelBuffer.CHANNEL_SDF
-	return ground_of(index, normal)
+	return ground_of(index, normal, point.y)
 
 
-## Грунт по индексу текстуры вокселя и нормали поверхности — правило шейдера рельефа.
-static func ground_of(index: int, normal: Vector3) -> Ground:
+## Грунт по индексу текстуры вокселя, нормали и высоте поверхности — правило шейдера рельефа.
+static func ground_of(index: int, normal: Vector3, height := INF) -> Ground:
 	if index == INDEX_DIRT:
 		return Ground.DIRT
 	if index == INDEX_STONE or normal.y < GRASS_MIN_NORMAL_Y:
 		return Ground.STONE
+	if height < SAND_TOP:
+		return Ground.SAND
 	return Ground.GRASS
 
 
@@ -201,9 +213,15 @@ static func make_generator() -> VoxelGeneratorGraph:
 	var dz := "max(abs(z - %s) - %s, 0.0)" % [_num(FLAT_CENTER.y), _num(FLAT_HALF.y)]
 	var hills_share := _expression(g, "clamp(sqrt(%s * %s + %s * %s) / %s, 0.0, 1.0)" % [dx, dx, dz, dz, _num(FLAT_BLEND)],
 		["x", "z"], [x, z])
-	var natural := "(%s + hills * 30.0 + %s)" % [_num(RUINS_FLOOR_Y), _cliff("z")]
+	# Доля берега: 0 у руин, 1 на дне бухты. К ней рельеф плавно спускается от холмов до SEABED_Y.
+	var coast := _expression(g, "clamp((z - %s - (x - %s) * (x - %s) * %s) / %s, 0.0, 1.0)" % [
+		_num(COAST_START_Z), _num(FLAT_CENTER.x), _num(FLAT_CENTER.x), _num(BAY_CURVE), _num(COAST_LENGTH)],
+		["x", "z"], [x, z])
+	# Холмы стихают к берегу, чтобы пляж шёл ровной полосой.
+	var inland := "(%s + hills * 30.0 * (1.0 - c) + %s)" % [_num(RUINS_FLOOR_Y), _cliff("z")]
+	var natural := "(%s + (%s - %s) * c * c * (3.0 - 2.0 * c))" % [inland, _num(SEABED_Y), inland]
 	var height := _expression(g, "%s + (%s - %s) * w * w * (3.0 - 2.0 * w)" % [_num(FLAT_Y), natural, _num(FLAT_Y)],
-		["z", "hills", "w"], [z, hills, hills_share])
+		["z", "hills", "w", "c"], [z, hills, hills_share, coast])
 	var sdf := _sdf(g, warp_noise, x, y, z, height)
 	var out := g.create_node(VoxelGraphFunction.NODE_OUTPUT_SDF, Vector2())
 	g.add_connection(sdf, 0, out, 0)
@@ -258,30 +276,16 @@ static func _expression(g: VoxelGraphFunction, text: String, names: Array[String
 
 # --- Материал ------------------------------------------------------------
 
-## Временные цвета из палитры арт-направления; позже их заменят текстуры из ассетов.
+## Текстуры грунта — Poly Haven ([ассеты](../../docs/engineering/assets.md)).
 func _make_material() -> ShaderMaterial:
 	var mat := ShaderMaterial.new()
 	mat.shader = preload("res://terrain/terrain.gdshader")
-	mat.set_shader_parameter("grass_tex", _noise_texture(Color("5E7D3A"), Color("7FA650"), 0.08))
-	mat.set_shader_parameter("stone_tex", _noise_texture(Color("A9784A"), Color("C9955B"), 0.05))
-	mat.set_shader_parameter("dirt_tex", _noise_texture(Color("5C4030"), Color("7A5A3C"), 0.12))
+	mat.set_shader_parameter("grass_tex", preload("res://assets/terrain/grass/aerial_grass_rock_diff_1k.jpg"))
+	mat.set_shader_parameter("stone_tex", preload("res://assets/terrain/rock/sandstone_cracks_diff_1k.jpg"))
+	mat.set_shader_parameter("dirt_tex", preload("res://assets/terrain/dirt/dirt_diff_1k.jpg"))
+	mat.set_shader_parameter("sand_tex", preload("res://assets/terrain/sand/aerial_beach_01_diff_1k.jpg"))
 	mat.set_shader_parameter("grass_min_normal_y", GRASS_MIN_NORMAL_Y)
 	mat.set_shader_parameter("grass_blend", GRASS_BLEND)
+	mat.set_shader_parameter("sand_top", SAND_TOP)
+	mat.set_shader_parameter("sand_blend", SAND_BLEND)
 	return mat
-
-
-static func _noise_texture(dark: Color, light: Color, freq: float) -> NoiseTexture2D:
-	var noise := FastNoiseLite.new()
-	noise.frequency = freq
-	noise.fractal_octaves = 5
-	var ramp := Gradient.new()
-	ramp.set_color(0, dark)
-	ramp.set_color(1, light)
-	var tex := NoiseTexture2D.new()
-	tex.width = 256
-	tex.height = 256
-	tex.seamless = true
-	tex.noise = noise
-	tex.color_ramp = ramp
-	tex.generate_mipmaps = true
-	return tex

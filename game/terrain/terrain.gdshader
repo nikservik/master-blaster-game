@@ -2,15 +2,20 @@ shader_type spatial;
 
 // Материал рельефа по вокселям (TER-1.2). Сетка Transvoxel в режиме TEXTURES_SINGLE_S4 кладёт в CUSTOM1
 // до четырёх индексов текстур (x) и их веса (y) по байту. Индексы — WorldTerrain.INDEX_*:
-// 0 — поверхность: трава на пологом, камень на крутом; 1 — камень; 2 — земля.
+// 0 — поверхность: трава на пологом, песок на пологом ниже sand_top, камень на крутом; 1 — камень; 2 — земля.
 // Пороги уклона задаёт WorldTerrain, чтобы шейдер и WorldTerrain.ground_at красили одинаково.
 
 uniform sampler2D grass_tex : source_color, filter_linear_mipmap, repeat_enable;
 uniform sampler2D stone_tex : source_color, filter_linear_mipmap, repeat_enable;
 uniform sampler2D dirt_tex : source_color, filter_linear_mipmap, repeat_enable;
-uniform float tex_scale = 0.15;
+uniform sampler2D sand_tex : source_color, filter_linear_mipmap, repeat_enable;
+uniform float tex_scale = 0.06;
 uniform float grass_min_normal_y = 0.78;
 uniform float grass_blend = 0.07;
+uniform float sand_top = 35.5;
+uniform float sand_blend = 0.8;
+// Тёплый оттенок песка по палитре арт-направления: текстура Poly Haven сероватая.
+uniform vec3 sand_tint = vec3(1.35, 1.15, 0.85);
 
 // Transvoxel: переход между LOD — вершины на границе с грубым соседом смещаются во вторичное положение.
 uniform int u_transition_mask;
@@ -60,9 +65,11 @@ void fragment() {
 	vec3 grass = triplanar(grass_tex, world_pos, w);
 	vec3 stone = triplanar(stone_tex, world_pos, w);
 	vec3 dirt = triplanar(dirt_tex, world_pos, w);
+	vec3 sand = triplanar(sand_tex, world_pos, w) * sand_tint;
 
 	float flat_amount = smoothstep(grass_min_normal_y - grass_blend, grass_min_normal_y + grass_blend, n.y);
-	vec3 surface = mix(stone, grass, flat_amount);
+	float sand_amount = 1.0 - smoothstep(sand_top - sand_blend, sand_top + sand_blend, world_pos.y);
+	vec3 surface = mix(stone, mix(grass, sand, sand_amount), flat_amount);
 	ALBEDO = surface * v_ground.x + stone * v_ground.y + dirt * v_ground.z;
 	ROUGHNESS = 0.95;
 }

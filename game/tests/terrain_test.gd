@@ -16,6 +16,23 @@ func test_ground_of_surface_is_grass_on_gentle_slope_and_stone_on_steep() -> voi
 	assert_int(WorldTerrain.ground_of(WorldTerrain.INDEX_SURFACE, steep)).is_equal(WorldTerrain.Ground.STONE)
 
 
+func test_ground_of_surface_near_sea_is_sand_on_gentle_slope_only() -> void:
+	var gentle := Vector3(0, 1, 0.5).normalized()
+	var steep := Vector3(0, 1, 1).normalized()
+	var beach := WorldTerrain.SAND_TOP - 0.5
+	assert_int(WorldTerrain.ground_of(WorldTerrain.INDEX_SURFACE, gentle, beach)).is_equal(WorldTerrain.Ground.SAND)
+	assert_int(WorldTerrain.ground_of(WorldTerrain.INDEX_SURFACE, steep, beach)).is_equal(WorldTerrain.Ground.STONE)
+	assert_int(WorldTerrain.ground_of(WorldTerrain.INDEX_DIRT, gentle, beach)).is_equal(WorldTerrain.Ground.DIRT)
+
+
+## Берег: к югу от руин рельеф уходит под воду, пляж — ниже SAND_TOP.
+func test_generator_descends_south_of_ruins_below_sea() -> void:
+	var gen := WorldTerrain.make_generator()
+	var x := int(WorldTerrain.FLAT_CENTER.x)
+	var far := int(WorldTerrain.COAST_START_Z + WorldTerrain.COAST_LENGTH)
+	assert_float(_surface_y(gen, x, far)).is_less(WorldTerrain.SEA_Y)
+
+
 ## Под руинами и полем грунт ровный, на 0,1 м ниже пола: руины стоят на нём, герой сходит без ступеньки.
 func test_generator_is_flat_under_ruins_and_field() -> void:
 	var gen := WorldTerrain.make_generator()

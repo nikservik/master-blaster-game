@@ -2,42 +2,53 @@
 
 [ext_resource type="PackedScene" path="res://hero/hero.tscn" id="1_hero"]
 [ext_resource type="Script" path="res://build/builder.gd" id="2_builder"]
-
-[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_sky"]
-
-[sub_resource type="Sky" id="Sky_main"]
-sky_material = SubResource("ProceduralSkyMaterial_sky")
-
-[sub_resource type="Environment" id="Environment_main"]
-background_mode = 2
-sky = SubResource("Sky_main")
-ambient_light_source = 3
-tonemap_mode = 2
+[ext_resource type="PackedScene" path="res://world/atmosphere.tscn" id="3_atmosphere"]
+[ext_resource type="Texture2D" path="res://assets/ruins/textures/T_SandstoneBlocks_BaseColor.png" id="4_blocks"]
+[ext_resource type="Texture2D" path="res://assets/ruins/textures/T_SandstoneBlocks_Normal.png" id="5_blocks_n"]
+[ext_resource type="Texture2D" path="res://assets/terrain/grass/aerial_grass_rock_diff_1k.jpg" id="6_grass"]
+[ext_resource type="Texture2D" path="res://assets/ruins/textures/T_SandstoneRubble_BaseColor.png" id="7_rubble"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_floor"]
-albedo_color = Color(0.42, 0.4, 0.36, 1)
+albedo_texture = ExtResource("7_rubble")
+uv1_scale = Vector3(0.6, 0.6, 0.6)
+uv1_triplanar = true
+uv1_world_triplanar = true
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_field"]
-albedo_color = Color(0.4, 0.46, 0.32, 1)
+albedo_texture = ExtResource("6_grass")
+uv1_scale = Vector3(0.08, 0.08, 0.08)
+uv1_triplanar = true
+uv1_world_triplanar = true
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_stone"]
-albedo_color = Color(0.62, 0.58, 0.52, 1)
+albedo_texture = ExtResource("4_blocks")
+normal_enabled = true
+normal_texture = ExtResource("5_blocks_n")
+uv1_scale = Vector3(0.35, 0.35, 0.35)
+uv1_triplanar = true
+uv1_world_triplanar = true
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_low"]
-albedo_color = Color(0.45, 0.6, 0.45, 1)
+albedo_color = Color(0.92, 0.88, 0.8, 1)
+albedo_texture = ExtResource("4_blocks")
+normal_enabled = true
+normal_texture = ExtResource("5_blocks_n")
+uv1_scale = Vector3(0.35, 0.35, 0.35)
+uv1_triplanar = true
+uv1_world_triplanar = true
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_high"]
-albedo_color = Color(0.65, 0.42, 0.4, 1)
+albedo_color = Color(0.85, 0.75, 0.65, 1)
+albedo_texture = ExtResource("4_blocks")
+normal_enabled = true
+normal_texture = ExtResource("5_blocks_n")
+uv1_scale = Vector3(0.35, 0.35, 0.35)
+uv1_triplanar = true
+uv1_world_triplanar = true
 
 [node name="Ruins" type="Node3D"]
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
-environment = SubResource("Environment_main")
-
-[node name="Sun" type="DirectionalLight3D" parent="."]
-position = Vector3(0, 10, 0)
-rotation = Vector3(-0.872665, 0.523599, 0)
-shadow_enabled = true
+[node name="Atmosphere" parent="." instance=ExtResource("3_atmosphere")]
 
 [node name="Floor" type="CSGBox3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)

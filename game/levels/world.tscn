@@ -3,11 +3,17 @@
 [ext_resource type="Script" path="res://terrain/world_terrain.gd" id="1_terrain"]
 [ext_resource type="PackedScene" path="res://levels/ruins.tscn" id="2_ruins"]
 [ext_resource type="Script" path="res://terrain/digger.gd" id="3_digger"]
+[ext_resource type="PackedScene" path="res://world/sea.tscn" id="4_sea"]
+[ext_resource type="Script" path="res://world/vegetation.gd" id="5_vegetation"]
+[ext_resource type="PackedScene" path="res://world/decor.tscn" id="6_decor"]
 
 [node name="World" type="Node3D"]
 
 [node name="Terrain" type="VoxelLodTerrain" parent="."]
 script = ExtResource("1_terrain")
+
+[node name="Vegetation" type="VoxelInstancer" parent="Terrain"]
+script = ExtResource("5_vegetation")
 
 [node name="Ruins" parent="." instance=ExtResource("2_ruins")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 40, 0)
@@ -20,3 +26,8 @@ script = ExtResource("3_digger")
 terrain = NodePath("../Terrain")
 hero = NodePath("../Ruins/Hero")
 builder = NodePath("../Ruins/Builder")
+
+[node name="Sea" parent="." instance=ExtResource("4_sea")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16, 33, 0)
+
+[node name="Decor" parent="." instance=ExtResource("6_decor")]
