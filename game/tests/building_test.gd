@@ -1,7 +1,7 @@
 extends GdUnitTestSuite
 
 ## Технические тесты сетки постройки: привязка ячеек и четвертей, поворот, этажи,
-## касание, ближайшая постройка и проверка пересечений.
+## касание, ближайшая постройка, проверка пересечений, грунт и опоры.
 
 const K := BuildPart.Kind
 
@@ -64,8 +64,8 @@ func test_distance_to_building_is_measured_from_nearest_part() -> void:
 
 func test_overlap_ignores_touching_and_wall_corners_but_finds_real_overlap() -> void:
 	var builder := auto_free(Builder.new()) as Builder
-	builder.set_physics_process(false)
 	add_child(builder)
+	builder.set_physics_process(false)
 	var building := Building.new()
 	builder.add_child(building)
 	building.add_part(K.FOUNDATION, 0, 0, Vector2(1, 1), 0)
@@ -79,3 +79,41 @@ func test_overlap_ignores_touching_and_wall_corners_but_finds_real_overlap() -> 
 	assert_bool(builder._overlaps(BuildPart.solids(K.WALL, 0, shrink), corner_wall)).is_false()
 	assert_bool(builder._overlaps(BuildPart.solids(K.FOUNDATION, 0, shrink), next_foundation)).is_false()
 	assert_bool(builder._overlaps(BuildPart.solids(K.WALL, 0, shrink), same_wall)).is_true()
+
+
+func _support_count(part: BuildPart) -> int:
+	return part.get_children().filter(func(c): return String(c.name).begins_with("Support")).size()
+
+
+func test_ground_skips_buildings_and_supports_stop_at_ground() -> void:
+	var world := auto_free(Node3D.new()) as Node3D
+	add_child(world)
+	var ground := StaticBody3D.new()
+	var box := CollisionShape3D.new()
+	box.shape = BoxShape3D.new()
+	(box.shape as BoxShape3D).size = Vector3(20, 1, 20)
+	box.position = Vector3(0, -0.5, 0)
+	ground.add_child(box)
+	world.add_child(ground)
+	var floating := Building.new()
+	world.add_child(floating)
+	floating.position = Vector3(0, 1.0, 0)
+	var on_ground := Building.new()
+	world.add_child(on_ground)
+	on_ground.position = Vector3(5, 0, 0)
+	await get_tree().physics_frame
+	# Фундамент в метре над землёй: четыре столба от низа плиты (0,9 м) до земли
+	var high := floating.add_part(K.FOUNDATION, 0, 0, Vector2(1, 1), 0)
+	high.grow_supports()
+	assert_int(_support_count(high)).is_equal(4)
+	# Фундамент на земле: низ плиты под землёй, столбов нет
+	var low := on_ground.add_part(K.FOUNDATION, 0, 0, Vector2(1, 1), 0)
+	low.grow_supports()
+	assert_int(_support_count(low)).is_equal(0)
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	# Грунт под постройкой — земля, а не плита и не столбы
+	var space := world.get_world_3d().direct_space_state
+	assert_float(Building.ground_height(space, Vector3(1, 5, 1), 10.0)).is_equal_approx(0.0, 0.001)
+	assert_float(Building.ground_height(space, Vector3(0.1, 5, 0.1), 10.0)).is_equal_approx(0.0, 0.001)
+	assert_object(Building.ground_height(space, Vector3(1, 5, 1), 2.0)).is_null()

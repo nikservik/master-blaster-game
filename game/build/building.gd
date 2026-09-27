@@ -14,6 +14,20 @@ const NEAR := 2.0
 const TOUCH := 0.05
 
 
+## Высота грунта под точкой: первое попадание луча вниз в слой 1 мимо построек и предметов.
+## Грунт — любое тело, кроме построек: площадка, рельеф. null, если в пределах depth грунта нет.
+static func ground_height(space: PhysicsDirectSpaceState3D, from: Vector3, depth: float) -> Variant:
+	var query := PhysicsRayQueryParameters3D.create(from, from + Vector3.DOWN * depth, 1)
+	while true:
+		var hit := space.intersect_ray(query)
+		if hit.is_empty():
+			return null
+		if not (hit.collider is BuildPart or hit.collider is BuildItem):
+			return (hit.position as Vector3).y
+		query.exclude += [hit.rid]
+	return null
+
+
 static func level_y(level: int) -> float:
 	return BASE + level * FLOOR_HEIGHT
 
