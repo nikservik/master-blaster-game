@@ -46,6 +46,8 @@ var _plan := {}
 var _ghost: Node3D
 var _ghost_key := ""
 var _ghost_material: StandardMaterial3D
+## Опоры нового призрака ещё не выращены: он только что создан.
+var _ghost_supports_stale := false
 var _hud: Label
 
 
@@ -276,8 +278,14 @@ func _show_ghost() -> void:
 		_ghost = _make_ghost()
 		_ghost_key = key
 	_ghost.visible = true
+	var moved := not _ghost.global_transform.is_equal_approx(_plan.world) or _ghost_supports_stale
 	_ghost.global_transform = _plan.world
 	_ghost_material.albedo_color = GHOST_GREEN if _plan.valid else GHOST_RED
+	# Призрак фундамента показывает опоры до грунта теми же столбами, что вырастут после установки (BLD-1.5).
+	if moved and _ghost is BuildPart and (_ghost as BuildPart).kind == BuildPart.Kind.FOUNDATION:
+		(_ghost as BuildPart).grow_supports(false)
+		_paint_ghost(_ghost)
+	_ghost_supports_stale = false
 
 
 func _make_ghost() -> Node3D:
@@ -291,11 +299,16 @@ func _make_ghost() -> Node3D:
 		part.setup(_plan.kind, size_index, true)
 		ghost = part
 	(ghost as CollisionObject3D).collision_layer = 0
-	for child in ghost.get_children():
-		if child is MeshInstance3D:
-			(child as MeshInstance3D).material_override = _ghost_material
+	_paint_ghost(ghost)
 	add_child(ghost)
+	_ghost_supports_stale = true
 	return ghost
+
+
+## Полупрозрачный цвет призрака на всех мешах модели, включая вложенные узлы glTF и опоры.
+func _paint_ghost(ghost: Node3D) -> void:
+	for mesh in ghost.find_children("*", "MeshInstance3D", true, false):
+		(mesh as MeshInstance3D).material_override = _ghost_material
 
 
 func _update_hud() -> void:
