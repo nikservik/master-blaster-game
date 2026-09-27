@@ -150,6 +150,7 @@ func _save_and_quit() -> void:
 func dig(center: Vector3) -> void:
 	_tool.mode = VoxelTool.MODE_REMOVE
 	_tool.do_sphere(center, BRUSH_RADIUS)
+	_remove_thin_plates(center)
 	_paint_dirt(center)
 
 
@@ -159,6 +160,34 @@ func fill(center: Vector3) -> void:
 	_tool.do_sphere(center, BRUSH_RADIUS)
 	_paint_dirt(center)
 
+
+
+## Убирает пластины грунта толщиной в воксель у ямы: соседние шары на разной высоте оставляют между собой
+## острые гребни тоньше вокселя, сетка рисует их торчащими плоскостями. Воксель грунта, у которого вдоль
+## какой-нибудь оси с обеих сторон воздух, становится воздухом.
+func _remove_thin_plates(center: Vector3) -> void:
+	var reach := ceili(BRUSH_RADIUS) + 1
+	var origin := Vector3i(center.round()) - Vector3i.ONE * (reach + 1)
+	var size := (reach + 1) * 2 + 1
+	var sdf := {}
+	for x in size:
+		for y in size:
+			for z in size:
+				var voxel := origin + Vector3i(x, y, z)
+				sdf[voxel] = _tool.get_voxel_f(voxel)
+	var axes: Array[Vector3i] = [Vector3i(1, 0, 0), Vector3i(0, 1, 0), Vector3i(0, 0, 1)]
+	var cleared := {}
+	for voxel: Vector3i in sdf:
+		if sdf[voxel] >= 0.0:
+			continue
+		for axis in axes:
+			var before: Variant = sdf.get(voxel - axis)
+			var after: Variant = sdf.get(voxel + axis)
+			if before != null and after != null and before > 0.0 and after > 0.0:
+				cleared[voxel] = minf(before, after) * 0.5
+				break
+	for voxel: Vector3i in cleared:
+		_tool.set_voxel_f(voxel, cleared[voxel])
 
 ## Красит тронутый грунт вокруг шара: на пляже не глубже WET_SAND_DEPTH от исходной поверхности —
 ## влажный песок, глубже и вне пляжа — земля. Исходную поверхность даёт генератор.
