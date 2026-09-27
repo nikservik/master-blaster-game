@@ -5,6 +5,7 @@ description = "Лесная экосистема с решениями Kev: си
 requires-python = ">=3.12"
 dependencies = [
     "numpy>=2.0",
+    "scipy>=1.13",
     "httpx>=0.28",
     "matplotlib>=3.9",
 ]
