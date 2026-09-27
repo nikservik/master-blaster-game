@@ -366,3 +366,72 @@ func test_TER_S14_hero_who_dug_to_world_bottom_falls_out_and_returns_to_start() 
 	assert_bool(hero.is_standing()).is_true()
 	await hero.run_forward(20)
 	assert_float((hero.position() - start).z).is_less(-1.0)
+
+
+# --- TER-1.4, TER-1.5, TER-1.6 --------------------------------------------
+
+## Кромка воды к югу от руин на x: первая z, где нетронутый рельеф ниже уровня моря.
+func _waterline_z(x: float) -> float:
+	var z := WorldTerrain.FLAT_CENTER.y + WorldTerrain.FLAT_HALF.y
+	while terrain.generated_surface_y(x, z) >= terrain.sea_y():
+		z += 1.0
+	return z
+
+
+## TER-1.4
+func test_TER_S15_bay_with_sand_beach_is_seen_from_ruins() -> void:
+	# Given: герой на старте, на площадке руин
+	await hero.begin_on_start()
+	var x := WorldTerrain.FLAT_CENTER.x
+	var water_z := _waterline_z(x)
+	# Then: от южного края площадки до моря рельеф не закрывает взгляд — бухта видна
+	# глаза героя на южном краю ровной площадки, у акведука
+	var eye := Vector3(x, level.floor_top() + 1.7, WorldTerrain.FLAT_CENTER.y + WorldTerrain.FLAT_HALF.y - 1.0)
+	var sea := Vector3(x, terrain.sea_y(), water_z + 20.0)
+	for i in range(1, 20):
+		var p := eye.lerp(sea, i / 20.0)
+		assert_float(terrain.generated_surface_y(p.x, p.z)).is_less(p.y)
+	# Then: у воды пологий пляж шириной не меньше 8 м
+	var beach := 0
+	for z in range(int(water_z) - 30, int(water_z)):
+		var y := terrain.generated_surface_y(x, z)
+		if y >= terrain.sea_y() and y < WorldTerrain.SAND_TOP:
+			beach += 1
+	assert_int(beach).is_greater_equal(8)
+	# When: герой выходит на пляж
+	await terrain.stand_on_ground(x, water_z - 3.0)
+	# Then: под ногами песок
+	var feet := hero.position()
+	assert_int(terrain.ground_hit_by(feet + Vector3.UP, feet + Vector3.DOWN)).is_equal(WorldTerrain.Ground.SAND)
+
+
+## TER-1.5
+func test_TER_S16_plants_grow_on_terrain_and_ruins_stand_above_bay() -> void:
+	# Given: герой на старте
+	await hero.begin_on_start()
+	# Then: по рельефу рассыпаны растения и камни
+	assert_int(terrain.plants_count()).is_greater(100)
+	# Then: над бухтой — акведук и светящийся обелиск
+	var modules := terrain.ruin_modules()
+	assert_array(modules.keys()).contains(["Arch1", "Obelisk"])
+	# When: герой бежит в опору арки акведука
+	var arch: Vector3 = modules["Arch4"]
+	await _given_on_ground(arch.x + 1.8, arch.z - 3.5, Vector3.BACK)
+	await hero.run_forward(90)
+	# Then: опора его остановила, сквозь неё не пройти
+	assert_float(hero.position().z).is_less(arch.z - 0.4)
+
+
+## TER-1.6
+func test_TER_S17_hero_wades_into_sea_only_to_waist() -> void:
+	# Given: герой на пляже лицом к морю
+	var x := WorldTerrain.FLAT_CENTER.x
+	var water_z := _waterline_z(x)
+	await _given_on_ground(x, water_z - 3.0, Vector3.BACK)
+	# When: бежит в море
+	await hero.run_forward(150)
+	# Then: он зашёл в воду, но не глубже пояса, и стоит на дне
+	var feet := hero.position()
+	assert_float(feet.z).is_greater(water_z)
+	assert_float(terrain.sea_y() - feet.y).is_less_equal(Shallows.WADE_DEPTH + 0.1)
+	assert_bool(hero.is_standing()).is_true()

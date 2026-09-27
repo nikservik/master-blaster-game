@@ -1,5 +1,6 @@
 [gd_scene format=3]
 
+[ext_resource type="Script" path="res://world/decor.gd" id="0_decor"]
 [ext_resource type="PackedScene" path="res://assets/ruins/arch.gltf" id="1_arch"]
 [ext_resource type="PackedScene" path="res://assets/ruins/column.gltf" id="2_column"]
 [ext_resource type="PackedScene" path="res://assets/ruins/column_broken.gltf" id="3_column_broken"]
@@ -19,6 +20,7 @@
 [ext_resource type="PackedScene" path="res://assets/ruins/magitech_panel.gltf" id="17_panel"]
 
 [node name="Decor" type="Node3D"]
+script = ExtResource("0_decor")
 
 [node name="Arch1" parent="." instance=ExtResource("1_arch")]
 transform = Transform3D(1.0000, 0, -0.0000, 0, 1.0000, 0, 0.0000, 0, 1.0000, -13.6, 39.9, 21)

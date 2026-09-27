@@ -300,3 +300,28 @@ func _click(button: MouseButton) -> void:
 	_hero.get_viewport().push_input(release)
 	await _hero_driver.wait(2)
 	await settle()
+
+
+# --- Берег ---------------------------------------------------------------
+
+## Уровень моря.
+func sea_y() -> float:
+	return WorldTerrain.SEA_Y
+
+
+## Сколько растений и камней рассыпано по рельефу вокруг героя.
+func plants_count() -> int:
+	var vegetation := _world.get_node("Terrain/Vegetation") as VoxelInstancer
+	var total := 0
+	for count: int in vegetation.debug_get_instance_counts().values():
+		total += count
+	return total
+
+
+## Модули руин над бухтой: имя → положение.
+func ruin_modules() -> Dictionary:
+	var result := {}
+	for module: Node3D in _world.get_node("Decor").get_children():
+		if module.scene_file_path.contains("/ruins/"):
+			result[module.name] = module.global_position
+	return result

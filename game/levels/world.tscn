@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" path="res://world/sea.tscn" id="4_sea"]
 [ext_resource type="Script" path="res://world/vegetation.gd" id="5_vegetation"]
 [ext_resource type="PackedScene" path="res://world/decor.tscn" id="6_decor"]
+[ext_resource type="Script" path="res://world/shallows.gd" id="7_shallows"]
 
 [node name="World" type="Node3D"]
 
@@ -31,3 +32,7 @@ builder = NodePath("../Ruins/Builder")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16, 33, 0)
 
 [node name="Decor" parent="." instance=ExtResource("6_decor")]
+
+[node name="Shallows" type="Node" parent="." node_paths=PackedStringArray("hero")]
+script = ExtResource("7_shallows")
+hero = NodePath("../Ruins/Hero")
