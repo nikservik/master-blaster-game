@@ -15,7 +15,9 @@ uniform float grass_blend = 0.07;
 uniform float sand_top = 35.5;
 uniform float sand_blend = 0.8;
 // Тёплый оттенок песка по палитре арт-направления: текстура Poly Haven сероватая.
-uniform vec3 sand_tint = vec3(1.35, 1.15, 0.85);
+uniform vec3 sand_tint = vec3(1.5, 1.3, 0.98);
+// Тёплая олива травы по палитре: текстура сероватая.
+uniform vec3 grass_tint = vec3(1.05, 1.05, 0.62);
 
 // Transvoxel: переход между LOD — вершины на границе с грубым соседом смещаются во вторичное положение.
 uniform int u_transition_mask;
@@ -62,7 +64,7 @@ void fragment() {
 	vec3 w = pow(abs(n), vec3(4.0));
 	w /= (w.x + w.y + w.z);
 
-	vec3 grass = triplanar(grass_tex, world_pos, w);
+	vec3 grass = triplanar(grass_tex, world_pos, w) * grass_tint;
 	vec3 stone = triplanar(stone_tex, world_pos, w);
 	vec3 dirt = triplanar(dirt_tex, world_pos, w);
 	vec3 sand = triplanar(sand_tex, world_pos, w) * sand_tint;

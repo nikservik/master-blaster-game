@@ -18,6 +18,11 @@
 [ext_resource type="PackedScene" path="res://assets/vegetation/bush.gltf" id="15_bush"]
 [ext_resource type="PackedScene" path="res://assets/vegetation/plant_big.gltf" id="16_plant_big"]
 [ext_resource type="PackedScene" path="res://assets/ruins/magitech_panel.gltf" id="17_panel"]
+[ext_resource type="PackedScene" path="res://assets/vegetation/vine_2.gltf" id="18_vine_2"]
+[ext_resource type="PackedScene" path="res://assets/vegetation/vine_4.gltf" id="19_vine_4"]
+[ext_resource type="PackedScene" path="res://assets/vegetation/fern.gltf" id="20_fern"]
+[ext_resource type="PackedScene" path="res://assets/vegetation/bush_flowers.gltf" id="21_bush_flowers"]
+[ext_resource type="PackedScene" path="res://assets/vegetation/palm_3.gltf" id="22_palm_3"]
 
 [node name="Decor" type="Node3D"]
 script = ExtResource("0_decor")
@@ -87,3 +92,48 @@ transform = Transform3D(0.5000, 0, -0.8660, 0, 1.0000, 0, 0.8660, 0, 0.5000, 5, 
 
 [node name="Bush3" parent="." instance=ExtResource("15_bush")]
 transform = Transform3D(-0.7518, 0, 0.2736, 0, 0.8000, 0, -0.2736, 0, -0.7518, 11.5, 39.9, 16)
+
+[node name="VineArch1" parent="." instance=ExtResource("18_vine_2")]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1.0000, 0, 0.0000, 0, 1.0000, -13.6, 39.9, 21.7)
+
+[node name="VineArch3" parent="." instance=ExtResource("19_vine_4")]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1.0000, 0, 0.0000, 0, 1.0000, -5.0, 39.9, 21.7)
+
+[node name="VineArch5" parent="." instance=ExtResource("18_vine_2")]
+transform = Transform3D(-1.0000, 0, -0.0000, 0, 1.0000, 0, 0.0000, 0, -1.0000, 3.6, 39.9, 21.7)
+
+[node name="Fern1" parent="." instance=ExtResource("20_fern")]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1.0000, 0, 0.0000, 0, 1.0000, -12.5, 39.9, 19.5)
+
+[node name="Fern2" parent="." instance=ExtResource("20_fern")]
+transform = Transform3D(0.4104, 0, -1.1276, 0, 1.2000, 0, 1.1276, 0, 0.4104, -6, 39.9, 19.8)
+
+[node name="Fern3" parent="." instance=ExtResource("20_fern")]
+transform = Transform3D(-0.7660, 0, -0.6428, 0, 1.0000, 0, 0.6428, 0, -0.7660, 1.5, 39.9, 19.2)
+
+[node name="Fern4" parent="." instance=ExtResource("20_fern")]
+transform = Transform3D(0.7794, 0, -0.4500, 0, 0.9000, 0, 0.4500, 0, 0.7794, 6.5, 39.9, 21.5)
+
+[node name="Fern5" parent="." instance=ExtResource("20_fern")]
+transform = Transform3D(-1.0337, 0, 0.3762, 0, 1.1000, 0, -0.3762, 0, -1.0337, -16, 39.9, 20.5)
+
+[node name="Flowers1" parent="." instance=ExtResource("21_bush_flowers")]
+transform = Transform3D(0.9000, 0, -0.0000, 0, 0.9000, 0, 0.0000, 0, 0.9000, -8, 39.9, 18.3)
+
+[node name="Flowers2" parent="." instance=ExtResource("21_bush_flowers")]
+transform = Transform3D(0.0000, 0, -0.8000, 0, 0.8000, 0, 0.8000, 0, 0.0000, 4.5, 39.9, 17.5)
+
+[node name="Palm3" parent="." instance=ExtResource("22_palm_3")]
+transform = Transform3D(0.9193, 0, -0.7713, 0, 1.2000, 0, 0.7713, 0, 0.9193, -19, 39.9, 25)
+
+[node name="Palm4" parent="." instance=ExtResource("13_palm_1")]
+transform = Transform3D(-0.8457, 0, -0.3078, 0, 0.9000, 0, 0.3078, 0, -0.8457, -15, 39.9, 26.5)
+
+[node name="Palm5" parent="." instance=ExtResource("14_palm_2")]
+transform = Transform3D(-0.3933, 0, 1.0806, 0, 1.1500, 0, -1.0806, 0, -0.3933, 11, 39.9, 26)
+
+[node name="Bush4" parent="." instance=ExtResource("15_bush")]
+transform = Transform3D(1.1000, 0, -0.0000, 0, 1.1000, 0, 0.0000, 0, 1.1000, -18, 39.9, 23.5)
+
+[node name="Bush5" parent="." instance=ExtResource("16_plant_big")]
+transform = Transform3D(1.0000, 0, -0.0000, 0, 1.0000, 0, 0.0000, 0, 1.0000, 10, 39.9, 24.5)

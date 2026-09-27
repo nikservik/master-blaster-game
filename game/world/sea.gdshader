@@ -3,13 +3,13 @@ render_mode blend_mix, cull_back, depth_draw_always, specular_schlick_ggx;
 
 // Море: бирюза на мелководье уходит в синеву на глубине, пена у берега, мягкие волны.
 
-uniform vec3 shallow_color : source_color = vec3(0.2, 0.8, 0.82);
+uniform vec3 shallow_color : source_color = vec3(0.247, 0.757, 0.788);
 uniform vec3 deep_color : source_color = vec3(0.114, 0.435, 0.549);
 uniform vec3 foam_color : source_color = vec3(0.97, 0.96, 0.9);
 // Глубина, на которой вода становится глубинной, м.
 uniform float deep_at = 6.0;
 // Ширина полосы пены у берега, м.
-uniform float foam_width = 0.7;
+uniform float foam_width = 1.6;
 uniform float wave_height = 0.12;
 uniform float wave_speed = 0.6;
 
@@ -52,16 +52,17 @@ void fragment() {
 	vec3 water = mix(shallow_color, deep_color, deep);
 	vec3 below = texture(screen_texture, SCREEN_UV + NORMAL.xy * 0.01).rgb;
 	float clarity = 1.0 - smoothstep(0.0, 1.5, thickness);
-	vec3 color = mix(water, below * shallow_color * 1.4, clarity * 0.55);
+	vec3 color = mix(water, below * shallow_color * 1.6, clarity * 0.4);
 
 	float foam_line = 1.0 - smoothstep(0.0, foam_width, thickness);
 	float ripple = 0.5 + 0.5 * sin(thickness * 9.0 - TIME * 2.2 + p.x * 0.4);
 	float foam = clamp(foam_line * (0.55 + 0.45 * ripple), 0.0, 1.0);
 
 	ALBEDO = mix(color, foam_color, foam);
-	ROUGHNESS = mix(0.06, 0.8, foam);
+	ROUGHNESS = mix(0.12, 0.9, foam);
 	METALLIC = 0.0;
-	SPECULAR = 0.6;
+	// Слабое отражение неба: цвет воды задаёт шейдер, солнце даёт блик.
+	SPECULAR = 0.25;
 	float fresnel = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 4.0);
-	ALPHA = clamp(mix(0.72, 0.97, deep) + fresnel * 0.2 + foam, 0.0, 1.0);
+	ALPHA = clamp(mix(0.8, 0.98, deep) + fresnel * 0.1 + foam, 0.0, 1.0);
 }

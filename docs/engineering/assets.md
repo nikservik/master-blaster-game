@@ -19,7 +19,7 @@
 | Poly Haven, https://polyhaven.com/a/aerial_grass_rock | Rob Tuytel | Трава, 1K | `terrain/grass/` |
 | Poly Haven, https://polyhaven.com/a/sandstone_cracks | Rob Tuytel | Камень, охристый песчаник, 1K | `terrain/rock/` |
 | Poly Haven, https://polyhaven.com/a/dirt | Charlotte Baglioni | Земля, 1K | `terrain/dirt/` |
-| Poly Haven, https://polyhaven.com/a/wasteland_clouds_puresky | Sergej Majboroda, Jarod Guest | HDRI 2K: низкое тёплое солнце, бирюзовое небо, кучевые облака, без земли | `sky/` |
+| Poly Haven, https://polyhaven.com/a/kloofendal_48d_partly_cloudy_puresky, CC0 | Greg Zaal, Jarod Guest | HDRI 2K: голубое небо с кучевыми облаками — небо игры | `sky/` |
 
 Quaternius скачивается с itch.io без входа в аккаунт: у бесплатных версий [Standard] кнопка Download. Лицензия CC0 указана в `License*.txt` каждого архива.
 
@@ -109,6 +109,6 @@ Quaternius скачивается с itch.io без входа в аккаунт
 
 **Рельеф** (`terrain/<sand|grass|rock|dirt>/`): карты Poly Haven 1K — `*_diff_1k.jpg` (цвет), `*_nor_gl_1k.jpg` (нормали OpenGL), `*_arm_1k.jpg` (AO, шероховатость, металличность по каналам R, G, B).
 
-**Небо** (`sky/wasteland_clouds_puresky_2k.hdr`) — для `PanoramaSkyMaterial`. Солнце в HDRI ниже, чем 25–35° из арт-направления: высоту и цвет солнца задаёт `DirectionalLight3D`.
+**Небо** — `sky/kloofendal_48d_partly_cloudy_puresky_2k.hdr` в `PanoramaSkyMaterial`. Солнце в HDRI ниже, чем 25–35° из арт-направления: высоту и цвет солнца задаёт `DirectionalLight3D`.
 
 `preview.tscn` — пробная сцена: все модели рядами по категориям, образцы рельефа, небо и солнце. В игре она не используется.
