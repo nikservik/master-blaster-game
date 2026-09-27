@@ -325,3 +325,8 @@ func ruin_modules() -> Dictionary:
 		if module.scene_file_path.contains("/ruins/"):
 			result[module.name] = module.global_position
 	return result
+
+
+## Видна ли вода моря в точке (x, z).
+func water_shown_at(x: float, z: float) -> bool:
+	return Sea.is_open_water(x, z)

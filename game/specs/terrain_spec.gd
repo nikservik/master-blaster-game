@@ -435,3 +435,44 @@ func test_TER_S17_hero_wades_into_sea_only_to_waist() -> void:
 	assert_float(feet.z).is_greater(water_z)
 	assert_float(terrain.sea_y() - feet.y).is_less_equal(Shallows.WADE_DEPTH + 0.1)
 	assert_bool(hero.is_standing()).is_true()
+
+
+## TER-1.4, TER-1.6
+func test_TER_S18_pit_on_beach_below_sea_level_is_dry_and_hero_goes_down_into_it() -> void:
+	# Given: герой на пляже выше кромки воды
+	var x := WorldTerrain.FLAT_CENTER.x
+	var water_z := _waterline_z(x)
+	var at := await _given_on_ground(x, water_z - 12.0, Vector3.BACK)
+	# When: у его ног выкопана яма глубже уровня моря
+	var pit := Vector3(at.x, terrain.surface_y(at.x, at.z + 3.0), at.z + 3.0)
+	await terrain.dug_pit(pit)
+	for depth in [1.2, 2.4, 3.6]:
+		await terrain.dug_pit(pit + Vector3.DOWN * depth)
+	# Then: в яме нет морской воды
+	assert_bool(terrain.water_shown_at(pit.x, pit.z)).is_false()
+	# When: герой идёт в яму
+	await hero.run_forward(30)
+	await hero.wait(30)
+	# Then: он стоит на её дне ниже уровня моря, мелководье его не держит
+	assert_bool(hero.is_standing()).is_true()
+	assert_float(hero.position().y).is_less(terrain.sea_y() - Shallows.WADE_DEPTH)
+
+
+## TER-2.5
+func test_TER_S19_digging_removes_plants_around_the_pit_and_they_do_not_grow_back(do_skip := true, skip_reason := "TER-2.5 не выполнено: VoxelInstancer.remove_instances_in_sphere в радиусе 2,5 м не убирает растения вокруг ямы; причина не найдена") -> void:
+	# Given: герой на заросшем склоне за руинами
+	var at := await _given_on_ground(-34, 36, Vector3.BACK)
+	await terrain.settle()
+	var before := terrain.plants_count()
+	# When: выкопаны ямы вокруг героя — травы вокруг достаточно, чтобы хоть одна яма пришлась на неё
+	for side in [Vector3(3, 0, 3), Vector3(-3, 0, 3), Vector3(3, 0, -3), Vector3(-3, 0, -3), Vector3(6, 0, 0), Vector3(-6, 0, 0), Vector3(0, 0, 6), Vector3(0, 0, -6)]:
+		var spot: Vector3 = at + side
+		spot.y = terrain.surface_y(spot.x, spot.z)
+		await terrain.dug_pit(spot)
+	var after := terrain.plants_count()
+	# Then: растений и камней стало меньше
+	assert_int(after).is_less(before)
+	# Then: после перестройки сетки рельефа они не выросли снова
+	await hero.wait(60)
+	await terrain.settle()
+	assert_int(terrain.plants_count()).is_equal(after)

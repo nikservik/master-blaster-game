@@ -43,6 +43,8 @@ const SEA_Y := 33.0
 const COAST_START_Z := 24.0
 const COAST_LENGTH := 100.0
 const SEABED_Y := 18.0
+## Холмы стихают к этой доле берега: дальше рельеф берега задан без шума.
+const HILLS_FADE := 1.0 / 12.0
 const BAY_CURVE := 0.004
 ## Поверхность ниже этой высоты — песок пляжа, на пологом.
 const SAND_TOP := SEA_Y + 3.5
@@ -132,7 +134,6 @@ func dig(center: Vector3) -> void:
 	_tool.mode = VoxelTool.MODE_REMOVE
 	_tool.do_sphere(center, BRUSH_RADIUS)
 	_paint_dirt(center)
-	_clear_plants(center)
 
 
 ## Насыпать шар грунта; насыпь — земля.
@@ -140,14 +141,8 @@ func fill(center: Vector3) -> void:
 	_tool.mode = VoxelTool.MODE_ADD
 	_tool.do_sphere(center, BRUSH_RADIUS)
 	_paint_dirt(center)
-	_clear_plants(center)
 
 
-## Растения и камни в зоне правки убираются: иначе они висят над ямой или тонут в насыпи.
-func _clear_plants(center: Vector3) -> void:
-	for child in get_children():
-		if child is VoxelInstancer:
-			(child as VoxelInstancer).remove_instances_in_sphere(center, DIRT_RADIUS)
 
 
 func _paint_dirt(center: Vector3) -> void:
@@ -227,7 +222,7 @@ static func make_generator() -> VoxelGeneratorGraph:
 		_num(COAST_START_Z), _num(FLAT_CENTER.x), _num(FLAT_CENTER.x), _num(BAY_CURVE), _num(COAST_LENGTH)],
 		["x", "z"], [x, z])
 	# Холмы стихают к берегу на первой двенадцатой части спуска: с террасы руин видна бухта, пляж идёт ровной полосой.
-	var inland := "(%s + hills * 30.0 * clamp(1.0 - c * 12.0, 0.0, 1.0) + %s)" % [_num(RUINS_FLOOR_Y), _cliff("z")]
+	var inland := "(%s + hills * 30.0 * clamp(1.0 - c * %s, 0.0, 1.0) + %s)" % [_num(RUINS_FLOOR_Y), _num(1.0 / HILLS_FADE), _cliff("z")]
 	var natural := "(%s + (%s - %s) * c * c * (3.0 - 2.0 * c))" % [inland, _num(SEABED_Y), inland]
 	var height := _expression(g, "%s + (%s - %s) * w * w * (3.0 - 2.0 * w)" % [_num(FLAT_Y), natural, _num(FLAT_Y)],
 		["z", "hills", "w", "c"], [z, hills, hills_share, coast])

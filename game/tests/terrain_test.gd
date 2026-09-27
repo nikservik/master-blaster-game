@@ -74,3 +74,17 @@ func _surface_y(gen: VoxelGenerator, x: float, z: float) -> float:
 		if s0 < 0.0 and s1 >= 0.0:
 			return bounds.position.y + i + s0 / (s0 - s1)
 	return NAN
+
+
+## Море рисуется там, где нетронутый берег ниже уровня моря, и не рисуется над сушей и в низинах у обрыва.
+func test_open_water_rule_matches_generated_shore() -> void:
+	var gen := WorldTerrain.make_generator()
+	for x in range(-120, 161, 40):
+		for z in range(-80, 200, 8):
+			var ground := _surface_y(gen, x, z)
+			if Sea.is_open_water(x, z):
+				assert_float(ground).is_less(WorldTerrain.SEA_Y + Sea.SHORE_MARGIN + 0.3)
+			if ground > WorldTerrain.SEA_Y + Sea.SHORE_MARGIN + 0.3:
+				assert_bool(Sea.is_open_water(x, z)).is_false()
+	# у обрыва моря нет, даже если низина ниже уровня моря
+	assert_bool(Sea.is_open_water(-10, -60)).is_false()

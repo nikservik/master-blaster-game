@@ -16,6 +16,28 @@ uniform float wave_speed = 0.6;
 uniform sampler2D depth_texture : hint_depth_texture, filter_linear_mipmap;
 uniform sampler2D screen_texture : hint_screen_texture, filter_linear_mipmap;
 
+// Открытая вода — правило Sea.is_open_water; значения задаёт Sea из WorldTerrain.
+uniform float sea_y = 33.0;
+uniform float shore_margin = 1.0;
+uniform float hills_fade = 0.0833;
+// coast: начало спуска по z, длина спуска, изгиб бухты, дно; flat: центр xz и полуразмеры площадки.
+uniform vec4 coast = vec4(24.0, 100.0, 0.004, 18.0);
+uniform vec4 flat_area = vec4(16.0, 0.0, 32.0, 24.0);
+// flat_y: высота ровного грунта, уровень руин, ширина перехода от площадки.
+uniform vec3 flat_y = vec3(39.9, 40.0, 24.0);
+
+bool is_open_water(vec2 p) {
+	float c = clamp((p.y - coast.x - (p.x - flat_area.x) * (p.x - flat_area.x) * coast.z) / coast.y, 0.0, 1.0);
+	if (c <= hills_fade) {
+		return false;
+	}
+	float natural = flat_y.y + (coast.w - flat_y.y) * c * c * (3.0 - 2.0 * c);
+	float dx = max(abs(p.x - flat_area.x) - flat_area.z, 0.0);
+	float dz = max(abs(p.y - flat_area.y) - flat_area.w, 0.0);
+	float w = clamp(sqrt(dx * dx + dz * dz) / flat_y.z, 0.0, 1.0);
+	return flat_y.x + (natural - flat_y.x) * w * w * (3.0 - 2.0 * w) < sea_y + shore_margin;
+}
+
 varying vec3 world_pos;
 
 float waves(vec2 p, float t) {
@@ -32,6 +54,9 @@ void vertex() {
 }
 
 void fragment() {
+	if (!is_open_water(world_pos.xz)) {
+		discard;
+	}
 	float t = TIME * wave_speed;
 	// Нормаль из производной волн — мелкая рябь.
 	vec2 p = world_pos.xz;
