@@ -21,7 +21,7 @@ OUT = Path.home() / "ml" / "out"
 
 def parse_args(argv=None):
     ap = argparse.ArgumentParser(description="Лесная экосистема с решениями Kev")
-    ap.add_argument("--variant", default="V0", choices=["random", "V0", "V1", "V2", "V3", "V4", "V5"])
+    ap.add_argument("--variant", default="V0", choices=["random", "V0", "V1", "V2", "V3", "V4", "V5", "V6"])
     ap.add_argument("--oracle", default="mock", choices=["mock", "kev"])
     ap.add_argument("--animals", type=int, default=1000)
     ap.add_argument("--days", type=float, default=1.0)

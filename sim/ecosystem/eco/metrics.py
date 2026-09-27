@@ -158,13 +158,15 @@ class Metrics:
             "reflexes": st["reflexes"], "events": dict(st["events"]),
         }
         v = solver.name
-        if v in ("V3", "V4"):
+        if v in ("V3", "V4", "V6"):
             h, m = solver.cache_hits, solver.cache_miss
             rep["cache"] = {"hits": h, "misses": m, "hit_rate": h / (h + m) if h + m else None, "keys": len(solver.cache)}
-        if v == "V4":
+        if v in ("V4", "V6"):
             rep["attention_tiers"] = solver.tiers
         if v == "V5":
             rep["policy"] = {"hits": solver.policy_hits, "animals": len(solver.policy)}
+        if v == "V6":
+            rep["deadline_fallbacks"] = solver.deadline_fallbacks
         if extra:
             rep.update(extra)
         return rep

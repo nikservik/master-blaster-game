@@ -510,6 +510,7 @@ class Ask:
     policy: bool = False
     waiting: list = field(default_factory=list)   # V5: запросы, ждущие политику
     task: asyncio.Task | None = None
+    expired: bool = False                          # V6: реакция не успела к сроку, особь уже решила по V0
 
 
 POLICY_SIT = ["calm", "hungry", "threat", "night"]
@@ -531,6 +532,9 @@ class OracleSolver(Solver):
         self.policy: dict[int, tuple[float, dict]] = {}
         self.policy_inflight: dict[int, Ask] = {}
         self.policy_hits = 0
+        self.deadline_fallbacks = 0                 # V6: реакций, решённых по V0 из-за срока
+        # V6: одновременно в Kev не больше стольких паттернов; реакции идут без очереди.
+        self.pattern_slots = 12 if variant == "V6" else None
 
     # --- ключ кэша: огрублённые поля state
     @staticmethod
@@ -614,7 +618,7 @@ class OracleSolver(Solver):
             keys = self.cache_keys(sim, idx, kind)
             hits, miss = self._cached(sim, idx, kind, keys)
             return Batch.concat(hits), [self._ask(sim, i, k, key) for i, k, key, m in zip(idx, kind, keys, miss) if m]
-        if v == "V4":
+        if v in ("V4", "V6"):
             d = np.linalg.norm(sim.pos[idx] - self.observer, axis=1)
             tier = np.digitize(d, [self.near_m, self.far_m])            # 0 рядом, 1 средне, 2 далеко
             sim.interval_mul[idx] = np.array([1.0, 2.0, 4.0])[tier]
@@ -726,6 +730,7 @@ class Driver:
         self.sim, self.solver, self.mode, self.metrics, self.recorder = sim, solver, mode, metrics, recorder
         solver.want_detail = recorder is not None
         self.inflight: list[Ask] = []
+        self.queue: list[Ask] = []                  # V6: паттерны, ждущие свободного места в Kev
         self.errors = 0
 
     def _apply(self, b: Batch, delays: np.ndarray | None = None):
@@ -745,21 +750,48 @@ class Driver:
             self.metrics.on_request(kind)
         b, asks = self.solver.handle(sim, idx, kind)
         self._apply(b, np.zeros(len(b.idx)))
+        slots = getattr(self.solver, "pattern_slots", None)
+        if slots is None:
+            self._send(asks)
+        else:   # V6: реакции сразу, паттерны — в очередь, в Kev не больше slots одновременно
+            self._send([a for a in asks if a.kind == KIND_REACTION])
+            self.queue += [a for a in asks if a.kind != KIND_REACTION]
+            busy = sum(1 for a in self.inflight if a.kind != KIND_REACTION)
+            self._send(self.queue[:max(0, slots - busy)])
+            self.queue = self.queue[max(0, slots - busy):]
+        if self.mode == "batched" and self.inflight:
+            await asyncio.wait([a.task for a in self.inflight])
+        elif self.inflight:
+            await asyncio.sleep(0)
+        self._collect()
+        if slots is not None and self.mode == "realtime":
+            self._expire()
+        if self.metrics and sim.tick % self.metrics.sample_every == 0:
+            self.metrics.sample(sim)
+        if self.recorder:
+            self.recorder.maybe_frame(sim)
+
+    def _send(self, asks: list[Ask]):
         oracle = self.solver.oracle
         for a in asks:
             a.task = asyncio.ensure_future(oracle.ask(a.state, a.questions))
             self.inflight.append(a)
         if self.metrics and asks:
             self.metrics.on_ask(asks)
-        if self.mode == "batched" and self.inflight:
-            await asyncio.wait([a.task for a in self.inflight])
-        elif self.inflight:
-            await asyncio.sleep(0)
-        self._collect()
-        if self.metrics and sim.tick % self.metrics.sample_every == 0:
-            self.metrics.sample(sim)
-        if self.recorder:
-            self.recorder.maybe_frame(sim)
+
+    def _expire(self):
+        """V6: реакция, не пришедшая за LATE_S, решается по V0; поздний ответ Kev пойдёт только в кэш."""
+        sim = self.sim
+        late = [a for a in self.inflight if a.kind == KIND_REACTION and not a.expired and sim.t - a.t_sent > self.LATE_S]
+        if not late:
+            return
+        for a in late:
+            a.expired = True
+        live = [a for a in late if sim.alive[a.i] and sim.uid[a.i] == a.uid]
+        self.solver.deadline_fallbacks += len(live)
+        if live:
+            self._apply(self.solver.v0.decide(sim, np.array([a.i for a in live]), np.array([a.kind for a in live]),
+                                              source="deadline_v0"), np.full(len(live), self.LATE_S))
 
     def _collect(self):
         done = [a for a in self.inflight if a.task.done()]
@@ -776,6 +808,8 @@ class Driver:
                 if self.metrics:
                     self.metrics.on_answer(ans)
                 b = self.solver.resolve(self.sim, a, ans)
+            if a.expired:           # V6: особь уже решила по V0 — ответ Kev остался только в кэше
+                continue
             out.append(b)
             delays += [self.sim.t - a.t_sent] * len(b.idx)
         self._apply(Batch.concat(out), np.array(delays))

@@ -12,7 +12,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 OUT = Path(__file__).resolve().parents[2] / "out"
-VARIANTS = ["V0", "V1", "V2", "V3", "V4", "V5"]
+VARIANTS = ["V0", "V1", "V2", "V3", "V4", "V5", "V6"]
 
 
 def load(series: str) -> list[dict]:
@@ -41,6 +41,8 @@ def row(r: dict) -> str:
         extra.append(f"кэш {r['cache']['hit_rate'] or 0:.0%}")
     if "policy" in r:
         extra.append(f"из политики {r['policy']['hits']}")
+    if "deadline_fallbacks" in r:
+        extra.append(f"реакций по V0 из-за срока {r['deadline_fallbacks']}")
     if "attention_tiers" in r:
         extra.append(f"внимание {r['attention_tiers']}")
     return (f"| {r['_name']} | {r['variant']} | {r['animals_start']} | {r['sim_days']:.2f} | {r['game_days_per_wall_min']:.3f} | "

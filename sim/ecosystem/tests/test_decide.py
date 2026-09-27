@@ -209,3 +209,39 @@ def test_kev_oracle_undoes_server_temperature():
     assert abs(sum(p.values()) - 1) < 1e-9
     assert p["a"] > 0.5 and p["c"] < 0.2
     assert abs(p["a"] / p["b"] - (0.5 / 0.3) ** SHARPEN) < 1e-9
+
+
+def test_v6_late_reaction_falls_back_to_v0_and_late_answer_is_not_applied():
+    async def go():
+        sim, roe = _roe_sees_wolf()
+        gate = asyncio.Event()
+        solver = OracleSolver("V6", MockOracle(gate=gate), observer=tuple(sim.pos[roe]))
+        m = Metrics(sim, "realtime")
+        drv = Driver(sim, solver, "realtime", m)
+        for _ in range(3):
+            await drv.tick()                  # косуля увидела волка — реакция ушла в Kev
+        assert sim.pend_rea[roe]
+        for _ in range(5):
+            await drv.tick()                  # 0,5 с без ответа — срок 0,3 с прошёл
+        assert not sim.pend_rea[roe] and solver.deadline_fallbacks == 1
+        gate.set()
+        for _ in range(2):
+            await drv.tick()
+        rep = m.report(sim, solver)
+        assert rep["reactions_from_oracle"] == 0 and rep["deadline_fallbacks"] == 1
+    asyncio.run(go())
+
+
+def test_v6_sends_reactions_at_once_and_at_most_12_patterns():
+    async def go():
+        sim = make_sim()
+        ids = [sim.add("roe", (100 + k % 6, 100 + k // 6), next_decide=0.05) for k in range(30)]
+        gate = asyncio.Event()
+        solver = OracleSolver("V6", MockOracle(gate=gate), observer=(100.0, 100.0))
+        drv = Driver(sim, solver, "realtime")
+        for _ in range(3):
+            await drv.tick()
+        patterns = [a for a in drv.inflight if a.kind != KIND_REACTION]
+        assert len(patterns) == 12 and len(drv.queue) >= 1
+        gate.set()
+    asyncio.run(go())
