@@ -37,3 +37,8 @@ claude --continue --dangerously-skip-permissions --remote-control "Master Blaste
 - Сцены и игру можно запускать без окна и без MCP: `godot_console --headless --path <проект> res://<сцена>.tscn --quit-after <кадры>`.
 - `.blend` Godot импортирует сам через установленный Blender.
 - В Blender через MCP нельзя вызывать `read_factory_settings`: он выгружает аддон MCP.
+- Сессия Claude может не видеть в PATH `WinGet\Links`. Перед вызовом `godot_console` пересобери `$env:Path` из переменных Machine и User.
+- Новые `class_name` видны только после `godot_console --headless --path game --import`. Выполни его перед прогоном спек.
+- Раскладка машины — Colemak. Настоящий ввод ОС для ручной проверки отправляй скан-кодами.
+- `SetForegroundWindow` срабатывает только после нажатия Alt. Перед вводом проверь фокус через `GetForegroundWindow`.
+- Автор git задан локально в репозитории: Sergey Nikiforov.
