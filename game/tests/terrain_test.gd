@@ -40,14 +40,12 @@ func test_generator_is_flat_under_ruins_and_field() -> void:
 		assert_float(_surface_y(gen, p.x, p.y)).is_equal_approx(WorldTerrain.FLAT_Y, 0.02)
 
 
-## Дальние участки упрощаются без щелей: несколько LOD, переходные сетки Transvoxel, шейдер их сдвигает.
-func test_lod_uses_transvoxel_transitions() -> void:
+## Дальние участки упрощаются: несколько LOD. Переходные сетки Transvoxel выключены — аддон рисовал их и между
+## блоками одного LOD поясами вертикальных плоскостей.
+func test_lod_without_transvoxel_transition_meshes() -> void:
 	var terrain := auto_free(WorldTerrain.new()) as WorldTerrain
 	assert_int(terrain.lod_count).is_greater(1)
-	var mesher := terrain.mesher as VoxelMesherTransvoxel
-	assert_bool(mesher.transitions_enabled).is_true()
-	var uniforms := (terrain.material as ShaderMaterial).shader.get_shader_uniform_list().map(func(u): return u.name)
-	assert_array(uniforms).contains(["u_transition_mask"])
+	assert_bool((terrain.mesher as VoxelMesherTransvoxel).transitions_enabled).is_false()
 
 
 func test_autosave_timer_repeats_every_minute() -> void:

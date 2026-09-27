@@ -26,26 +26,13 @@ uniform vec3 lush_tint = vec3(0.95, 1.2, 0.55);
 uniform vec3 wet_tint = vec3(0.84, 0.72, 0.56);
 uniform float wet_roughness = 0.5;
 
-// Transvoxel: переход между LOD — вершины на границе с грубым соседом смещаются во вторичное положение.
-uniform int u_transition_mask;
 
 varying vec3 world_pos;
 varying vec3 world_normal;
 // Доли материалов в вершине: x — поверхность, y — камень, z — земля, w — влажный песок.
 varying vec4 v_ground;
 
-vec3 get_transvoxel_position(vec3 vertex_pos, vec4 vertex_custom) {
-	int border_mask = int(vertex_custom.a);
-	int cell_border_mask = border_mask & 63;
-	int vertex_border_mask = (border_mask >> 6) & 63;
-	int m = u_transition_mask & cell_border_mask;
-	float t = float(m != 0);
-	t *= float((vertex_border_mask & ~u_transition_mask) == 0);
-	return mix(vertex_pos, vertex_custom.xyz, t);
-}
-
 void vertex() {
-	VERTEX = get_transvoxel_position(VERTEX, CUSTOM0);
 	world_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	world_normal = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz);
 

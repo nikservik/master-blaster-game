@@ -101,6 +101,10 @@ func _init() -> void:
 	generator = make_generator()
 	var mesher_transvoxel := VoxelMesherTransvoxel.new()
 	mesher_transvoxel.texturing_mode = VoxelMesherTransvoxel.TEXTURES_SINGLE_S4
+	# Переходные сетки Transvoxel выключены: аддон рисовал их и между блоками одного LOD — на выкопанных
+	# стенках и в пещерах вставали пояса вертикальных плоскостей по границам блоков. Щелей между LOD
+	# на общих планах не видно.
+	mesher_transvoxel.transitions_enabled = false
 	mesher = mesher_transvoxel
 	material = _make_material()
 
