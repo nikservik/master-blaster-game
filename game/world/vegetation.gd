@@ -9,6 +9,8 @@ extends VoxelInstancer
 const FLAT_GAP := 0.4
 ## Высоко над руинами — сухие охристые плато.
 const PLATEAU_Y := 58.0
+## Растение повисло, если грунт под основанием мягче этого значения SDF (TER-2.5).
+const FLOATING_SDF_THRESHOLD := 0.0
 
 ## Вид растения или камня: путь к модели, уровень детализации рельефа, плотность на м², масштаб,
 ## допустимый уклон в градусах, высоты и доля пятнами по шуму (0 — сплошь).
@@ -42,6 +44,9 @@ func _init() -> void:
 			var item := VoxelInstanceLibraryMultiMeshItem.new()
 			item.set_mesh(mesh, 0)
 			item.lod_index = kind[1]
+			# TER-2.5: после правки рельефа растение, под основанием которого (0,1 м вниз по нормали) воздух, убирается.
+			item.floating_sdf_threshold = FLOATING_SDF_THRESHOLD
+			item.floating_sdf_offset_along_normal = -0.1
 			item.cast_shadow = RenderingServer.SHADOW_CASTING_SETTING_ON
 			item.generator = _generator(kind, range_y)
 			lib.add_item(id, item)
