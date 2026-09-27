@@ -66,3 +66,22 @@ func _ledge(node_name: StringName) -> Ledge:
 
 func _box(node_name: StringName) -> CSGBox3D:
 	return _level.get_node(NodePath(node_name)) as CSGBox3D
+
+
+# --- Склон на поле: наклонная плита Slope, поднимается к +X ----------------
+
+## Высота поверхности склона над точкой (x, z) — по плоскости верхней грани плиты.
+func slope_height(at: Vector3) -> float:
+	var slope := _box(&"Slope")
+	var top := slope.global_transform * Vector3(0, slope.size.y / 2.0, 0)
+	var normal := slope.global_basis.y.normalized()
+	return top.y - ((at.x - top.x) * normal.x + (at.z - top.z) * normal.z) / normal.y
+
+
+## Точка на поверхности склона над (x, z).
+func on_slope(at: Vector3) -> Vector3:
+	return Vector3(at.x, slope_height(at), at.z)
+
+
+func slope_transform() -> Transform3D:
+	return _box(&"Slope").global_transform

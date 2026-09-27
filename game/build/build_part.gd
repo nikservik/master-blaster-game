@@ -22,6 +22,9 @@ const DOOR_WIDTH := 1.0
 const DOOR_HEIGHT := 2.2
 const STAIRS_RISE := 3.0
 const STAIRS_STEPS := 10
+## Опора фундамента — столб 0,2 × 0,2 м в углу плиты; грунт ищется не глубже SUPPORT_DEPTH под плитой.
+const SUPPORT := 0.2
+const SUPPORT_DEPTH := 20.0
 
 const COLORS := {
 	Kind.FOUNDATION: Color(0.55, 0.53, 0.5),
@@ -114,6 +117,39 @@ func setup(part_kind: Kind, part_size: int, ghost: bool) -> void:
 			view.mesh = mesh
 			view.transform = solid[1]
 			add_child(view)
+
+
+## Опоры фундамента (BLD-1.5): столбы в углах плиты от её низа вниз до грунта. Где грунт не ниже
+## низа плиты, опоры нет. Деталь уже стоит в мире; рельеф не меняется.
+func grow_supports() -> void:
+	var f := footprint(kind, size_index)
+	var space := get_world_3d().direct_space_state
+	var material := StandardMaterial3D.new()
+	material.albedo_color = COLORS[kind]
+	for sx in [-1.0, 1.0]:
+		for sz in [-1.0, 1.0]:
+			var top := Vector3(sx * (f.x - SUPPORT) / 2.0, -SLAB, sz * (f.y - SUPPORT) / 2.0)
+			# Луч сверху: изнутри рельефа луч его поверхность не видит.
+			var probe := to_global(top) + Vector3.UP * Building.FLOOR_HEIGHT
+			var ground: Variant = Building.ground_height(space, probe, Building.FLOOR_HEIGHT + SUPPORT_DEPTH)
+			if ground == null:
+				continue
+			var length: float = to_global(top).y - float(ground)
+			if length <= 0.0:
+				continue
+			var s := _box(top + Vector3.DOWN * length / 2.0, Vector3(SUPPORT, length, SUPPORT), Vector3.ZERO)
+			var collision := CollisionShape3D.new()
+			collision.shape = s[0]
+			collision.transform = s[1]
+			add_child(collision)
+			var mesh := BoxMesh.new()
+			mesh.size = (s[0] as BoxShape3D).size
+			mesh.material = material
+			var view := MeshInstance3D.new()
+			view.name = "Support"
+			view.mesh = mesh
+			view.transform = s[1]
+			add_child(view, true)
 
 
 func _add_steps(material: StandardMaterial3D) -> void:

@@ -205,6 +205,25 @@ func building_yaw(building := 0) -> float:
 	return atan2(-forward.x, -forward.z)
 
 
+## Опоры фундамента: верх и низ каждого столба в мире, как их видит игрок.
+func supports(part: int, building := 0) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for child in _builder.buildings()[building].parts()[part].get_children():
+		if child is MeshInstance3D and String(child.name).begins_with("Support"):
+			var box: AABB = child.global_transform * (child as MeshInstance3D).get_aabb()
+			var middle := box.get_center()
+			result.append({
+				"top": Vector3(middle.x, box.end.y, middle.z),
+				"bottom": Vector3(middle.x, box.position.y, middle.z),
+			})
+	return result
+
+
+## Вертикаль сетки постройки в мире: у горизонтальной сетки — вверх.
+func building_up(building := 0) -> Vector3:
+	return _builder.buildings()[building].global_basis.y
+
+
 func items() -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	for item in _builder.items():

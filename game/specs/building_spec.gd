@@ -5,16 +5,20 @@ extends GdUnitTestSuite
 
 const HeroDriver := preload("res://specs/drivers/hero_driver.gd")
 const BuilderDriver := preload("res://specs/drivers/builder_driver.gd")
+const LevelDriver := preload("res://specs/drivers/level_driver.gd")
 
 ## Где стоит герой на поле и куда смотрит камера по умолчанию (−Z).
 const FIELD_SPOT := Vector3(28, 0, 6)
 ## Точка на земле в 4 м перед героем.
 const AHEAD := Vector3(28, 0, 2)
+## У подножия склона Slope; склон поднимается к +X.
+const SLOPE_SPOT := Vector3(30.5, 0, -13)
 const FOUNDATION_TOP := 0.1
 const EPS := 0.05
 
 var hero: HeroDriver
 var builder: BuilderDriver
+var level: LevelDriver
 var _stand: Node3D
 
 
@@ -24,6 +28,7 @@ func before() -> void:
 	add_child(_stand)
 	hero = HeroDriver.new(_stand.get_node("Hero") as Hero)
 	builder = BuilderDriver.new(_stand.get_node("Builder") as Builder, hero)
+	level = LevelDriver.new(_stand)
 
 
 func after() -> void:
@@ -167,6 +172,85 @@ func test_BLD_S5_foundation_far_from_buildings_starts_new_building() -> void:
 	var camera_yaw := _yaw(hero.camera_forward_flat())
 	assert_float(_quarter_diff(builder.building_yaw(1), camera_yaw)).is_less(0.02)
 	assert_float(_quarter_diff(builder.building_yaw(1), builder.building_yaw(0))).is_greater(0.1)
+
+
+## Фундамент-ячейка на склоне в 4,5 м от героя. Герой смотрит вверх по склону (+X),
+## поэтому ось +Z сетки идёт вниз по склону, к герою.
+func _given_foundation_on_slope() -> void:
+	await hero.begin_on_start()
+	await builder.begin_empty()
+	await hero.stand_at(SLOPE_SPOT)
+	await hero.look_along(Vector3(1, 0, 0))
+	await builder.enter_build_mode()
+	await builder.aim_at(level.on_slope(SLOPE_SPOT + Vector3(4.5, 0, 0)))
+	await builder.place()
+
+
+## Углы низа плиты детали в мире.
+func _slab_corners(part: Dictionary) -> Array[Vector3]:
+	var grid: AABB = part.grid
+	var result: Array[Vector3] = []
+	for x in [grid.position.x, grid.end.x]:
+		for z in [grid.position.z, grid.end.z]:
+			result.append(builder.grid_point(Vector3(x, grid.position.y, z)))
+	return result
+
+
+## Каждый угол плиты, под которым грунт ниже плиты, стоит на опоре; каждая опора — от плиты до грунта.
+func _assert_supports_reach_ground(part_index: int) -> void:
+	var supports := builder.supports(part_index)
+	for s in supports:
+		assert_float(s.bottom.y).is_equal_approx(level.slope_height(s.bottom), 0.03)
+	for corner in _slab_corners(builder.parts()[part_index]):
+		if level.slope_height(corner) > corner.y - EPS:
+			continue
+		var under := supports.filter(func(s): return Vector2(s.top.x - corner.x, s.top.z - corner.z).length() < 0.2)
+		assert_int(under.size()).is_equal(1)
+		assert_float(under[0].top.y).is_equal_approx(corner.y, 0.01)
+
+
+func _longest_support(part_index: int) -> float:
+	var longest := 0.0
+	for s in builder.supports(part_index):
+		longest = maxf(longest, s.top.y - s.bottom.y)
+	return longest
+
+
+## BLD-1.5
+func test_BLD_S18_foundation_on_slope_stays_level_on_supports_down_to_ground() -> void:
+	# Given
+	var slope_before := level.slope_transform()
+	# When: фундамент на склон
+	await _given_foundation_on_slope()
+	# Then: сетка горизонтальна
+	assert_vector(builder.building_up()).is_equal_approx(Vector3.UP, Vector3(0.001, 0.001, 0.001))
+	# Then: плита лежит на самой высокой точке склона под ней, ниже по склону — на опорах до грунта
+	var foundation: Dictionary = builder.parts()[0]
+	var highest := -INF
+	for corner in _slab_corners(foundation):
+		highest = maxf(highest, level.slope_height(corner))
+	assert_float(foundation.center.y).is_equal_approx(highest + FOUNDATION_TOP, 0.03)
+	assert_int(builder.supports(0).size()).is_greater_equal(2)
+	_assert_supports_reach_ground(0)
+	# Then: склон не изменился
+	assert_bool(level.slope_transform().is_equal_approx(slope_before)).is_true()
+
+
+## BLD-1.5
+func test_BLD_S19_second_foundation_on_slope_keeps_height_with_longer_supports() -> void:
+	# Given
+	await _given_foundation_on_slope()
+	var first: Dictionary = builder.parts()[0]
+	# When: второй фундамент рядом, ниже по склону
+	await builder.aim_at(level.on_slope(builder.grid_point(Vector3(1, 0, 3))))
+	await builder.place()
+	# Then: та же постройка и та же высота, опоры длиннее и тоже до грунта
+	assert_int(builder.building_count()).is_equal(1)
+	var second: Dictionary = builder.parts()[1]
+	_assert_grid(second, Vector2(0, 2), Vector2(2, 4))
+	assert_float(second.center.y).is_equal_approx(first.center.y, 0.001)
+	_assert_supports_reach_ground(1)
+	assert_float(_longest_support(1)).is_greater(_longest_support(0) + 0.2)
 
 
 # --- BLD-2 Детали --------------------------------------------------------

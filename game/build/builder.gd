@@ -25,6 +25,8 @@ const OVERLAP_MASK := 2 | 4
 const OVERLAP_SHRINK := Vector3(0.11, 0.02, 0.11)
 ## Прицел ставит не дальше этого расстояния от героя (BLD-3.2).
 const REACH := 8.0
+## Грунт под углами нового фундамента ищется в пределах этой высоты выше и ниже точки прицела.
+const GROUND_PROBE := 3.0
 const ITEM_TURN_STEP := deg_to_rad(15.0)
 const GHOST_GREEN := Color(0.2, 1.0, 0.35, 0.45)
 const GHOST_RED := Color(1.0, 0.2, 0.2, 0.45)
@@ -162,6 +164,8 @@ func _plan_part() -> Dictionary:
 		var grid := Transform3D(Basis(Vector3.UP, _camera_yaw()), Vector3.ZERO)
 		var r := Building.rotated_footprint(BuildPart.footprint(kind, size_index), quarter_turns)
 		grid.origin = hit - grid.basis * Vector3(r.x / 2.0, 0.0, r.y / 2.0)
+		# На неровном рельефе сетка горизонтальна и встаёт на самую высокую точку грунта под площадкой (BLD-1.5).
+		grid.origin.y = _highest_ground(grid, r, hit.y)
 		var center := Vector2(r.x / 2.0, r.y / 2.0)
 		var valid := kind == BuildPart.Kind.FOUNDATION and _surface_is_ground()
 		var world := grid * Building.part_transform(center, 0, quarter_turns)
@@ -192,6 +196,18 @@ func _plan_item() -> Dictionary:
 		on_floor = on_floor and (part.kind == BuildPart.Kind.FOUNDATION or part.kind == BuildPart.Kind.FLOOR)
 	var valid := on_floor and not _overlaps([BuildItem.solid(kind, OVERLAP_SHRINK)], world)
 	return {"valid": valid, "item": kind, "world": world}
+
+
+## Самая высокая точка грунта под углами площадки размером r в сетке grid, но не ниже точки прицела.
+func _highest_ground(grid: Transform3D, r: Vector2, aim_y: float) -> float:
+	var space := get_world_3d().direct_space_state
+	var highest := aim_y
+	for corner in [Vector3.ZERO, Vector3(r.x, 0, 0), Vector3(0, 0, r.y), Vector3(r.x, 0, r.y)]:
+		var p: Vector3 = grid * corner
+		var ground: Variant = Building.ground_height(space, Vector3(p.x, aim_y + GROUND_PROBE, p.z), GROUND_PROBE * 2.0)
+		if ground != null:
+			highest = maxf(highest, ground)
+	return highest
 
 
 ## Пол площадки — всё, что не постройка и не предмет.
@@ -227,7 +243,9 @@ func _place() -> void:
 		building = Building.new()
 		add_child(building)
 		building.global_transform = _plan.grid
-	building.add_part(_plan.kind, size_index, quarter_turns, _plan.center, _plan.level)
+	var part := building.add_part(_plan.kind, size_index, quarter_turns, _plan.center, _plan.level)
+	if part.kind == BuildPart.Kind.FOUNDATION:
+		part.grow_supports()
 
 
 func _remove() -> void:
