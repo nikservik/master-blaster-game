@@ -23,7 +23,7 @@ uniform vec3 grass_tint = vec3(1.05, 1.05, 0.62);
 uniform sampler2D patch_tex : filter_linear_mipmap, repeat_enable;
 uniform vec3 lush_tint = vec3(0.95, 1.2, 0.55);
 // Влажный песок: песок палитры темнее и насыщеннее, с блеском.
-uniform vec3 wet_tint = vec3(0.76, 0.66, 0.52);
+uniform vec3 wet_tint = vec3(0.84, 0.72, 0.56);
 uniform float wet_roughness = 0.5;
 
 // Transvoxel: переход между LOD — вершины на границе с грубым соседом смещаются во вторичное положение.

@@ -58,8 +58,15 @@ const BRUSH_RADIUS := 1.5
 const DIRT_RADIUS := BRUSH_RADIUS + 1.0
 ## На пляже тронутый грунт не глубже этого от исходной поверхности — влажный песок (TER-1.2).
 const WET_SAND_DEPTH := 1.5
+## Цвет поверхности смешивается из вокселей ячейки под ней, до 1 м глубже: чтобы поверхность до WET_SAND_DEPTH
+## была влажным песком, красятся воксели на CELL глубже.
+const CELL := 1.0
 ## Исходную поверхность для окраски ищут в столбце ± столько метров от центра правки.
 const GENERATED_REACH := 16
+## Верхний слой грунта толщиной SKIN_DEPTH красится только до SKIN_MARGIN за краем шара: стенки ямы
+## окрашены, а ровная поверхность вокруг остаётся нетронутой.
+const SKIN_DEPTH := 1.0
+const SKIN_MARGIN := 0.5
 const AUTOSAVE_SECONDS := 60.0
 
 ## Файл хранилища правок. Задаётся до добавления в дерево; спеки пишут во временный каталог.
@@ -160,17 +167,22 @@ func _paint_dirt(center: Vector3) -> void:
 			var surface := NAN
 			for dy in range(-reach, reach + 1):
 				var voxel := middle + Vector3i(dx, dy, dz)
-				if Vector3(voxel).distance_to(center) > DIRT_RADIUS:
+				var distance := Vector3(voxel).distance_to(center)
+				if distance > DIRT_RADIUS:
 					continue
 				if is_nan(surface):
 					surface = _generated_surface_y(voxel.x, voxel.z, center.y)
+				# Нетронутый верхний слой дальше края ямы не красится: иначе вокруг ямы тёмный ореол.
+				var depth := surface - voxel.y
+				if depth >= 0.0 and depth < SKIN_DEPTH and distance > BRUSH_RADIUS + SKIN_MARGIN:
+					continue
 				_tool.set_voxel(voxel, touched_index(voxel.y, surface))
 	_tool.channel = VoxelBuffer.CHANNEL_SDF
 
 
 ## Индекс тронутого грунта на высоте y в столбце с исходной поверхностью surface.
 static func touched_index(y: float, surface: float) -> int:
-	if surface < SAND_TOP and surface - y <= WET_SAND_DEPTH:
+	if surface < SAND_TOP and surface - y <= WET_SAND_DEPTH + CELL:
 		return INDEX_WET_SAND
 	return INDEX_DIRT
 

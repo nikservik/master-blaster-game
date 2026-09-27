@@ -90,13 +90,15 @@ func test_open_water_rule_matches_generated_shore() -> void:
 	assert_bool(Sea.is_open_water(-10, -60)).is_false()
 
 
-## Тронутый грунт: на пляже у исходной поверхности и в насыпи над ней — влажный песок, глубже 1,5 м — земля;
+## Тронутый грунт: на пляже у исходной поверхности и в насыпи над ней — влажный песок; воксели глубже 1,5 м
+## плюс ячейка, из которой смешивается цвет поверхности, — земля;
 ## вне пляжа и без найденной поверхности — земля.
 func test_touched_ground_is_wet_sand_near_beach_surface_only() -> void:
 	var beach := WorldTerrain.SAND_TOP - 1.0
 	assert_int(WorldTerrain.touched_index(beach - 1.0, beach)).is_equal(WorldTerrain.INDEX_WET_SAND)
 	assert_int(WorldTerrain.touched_index(beach + 1.0, beach)).is_equal(WorldTerrain.INDEX_WET_SAND)
-	assert_int(WorldTerrain.touched_index(beach - 2.0, beach)).is_equal(WorldTerrain.INDEX_DIRT)
+	assert_int(WorldTerrain.touched_index(beach - 2.5, beach)).is_equal(WorldTerrain.INDEX_WET_SAND)
+	assert_int(WorldTerrain.touched_index(beach - 3.0, beach)).is_equal(WorldTerrain.INDEX_DIRT)
 	var grass := WorldTerrain.SAND_TOP + 1.0
 	assert_int(WorldTerrain.touched_index(grass - 0.5, grass)).is_equal(WorldTerrain.INDEX_DIRT)
 	assert_int(WorldTerrain.touched_index(beach, NAN)).is_equal(WorldTerrain.INDEX_DIRT)
