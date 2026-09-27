@@ -79,6 +79,13 @@ func turn_camera(pixels: float) -> void:
 	await _move_mouse(Vector2(pixels, 0.0))
 
 
+## Повернуть камеру мышью так, чтобы она смотрела вдоль направления по горизонтали.
+func look_along(direction: Vector3) -> void:
+	var flat := Vector3(direction.x, 0.0, direction.z).normalized()
+	var error := camera_forward_flat().signed_angle_to(flat, Vector3.UP)
+	await turn_camera(-error / CameraRig.MOUSE_SENSITIVITY)
+
+
 ## Провести мышью по вертикали: положительные пиксели — вниз.
 func tilt_camera(pixels: float) -> void:
 	await _move_mouse(Vector2(0.0, pixels))

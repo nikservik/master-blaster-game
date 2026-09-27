@@ -34,7 +34,10 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	var hero_origin := _hero.get_global_transform_interpolated().origin
 	global_position = hero_origin + Vector3.UP * PIVOT_HEIGHT
-	_camera.look_at(hero_origin + Vector3.UP * LOOK_HEIGHT)
+	var target := hero_origin + Vector3.UP * LOOK_HEIGHT
+	# До первого шага физики SpringArm ещё не отодвинул камеру: она ровно над целью.
+	if Vector2(_camera.global_position.x - target.x, _camera.global_position.z - target.z).length() > 0.001:
+		_camera.look_at(target)
 
 
 func _unhandled_input(event: InputEvent) -> void:
