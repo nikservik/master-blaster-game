@@ -27,5 +27,9 @@ realtime)
   run burst_v1 V1 100 0.01 realtime --scenario wolves; run burst_v2 V2 100 0.01 realtime --scenario wolves
   run burst_v4 V4 1000 0.01 realtime --scenario wolves; run burst_v5 V5 1000 0.01 realtime --scenario wolves
   ;;
+dynamics)
+  run v0_1k V0 1000 10 batched; run v3_1k V3 1000 10 batched; run v4_1k V4 1000 10 batched --observer 250,250
+  run v5_1k V5 1000 10 batched; run v0_300 V0 300 3 batched; run v1_300 V1 300 3 batched; run v2_300 V2 300 3 batched
+  ;;
 esac
 echo "== done $(date +%T)"
