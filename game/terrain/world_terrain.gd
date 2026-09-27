@@ -167,17 +167,47 @@ func fill(center: Vector3) -> void:
 ## Жёсткий максимум оставлял между шарами на разной высоте острые гребни тоньше вокселя, и сетка рисовала
 ## их торчащими плоскостями; мягкий скругляет стык и с ямами от прошлых копаний.
 func _dig_sphere(center: Vector3) -> void:
-	var reach := ceili(BRUSH_RADIUS + DIG_BLEND)
-	var middle := Vector3i(center.round())
-	for dx in range(-reach, reach + 1):
-		for dy in range(-reach, reach + 1):
-			for dz in range(-reach, reach + 1):
-				var voxel := middle + Vector3i(dx, dy, dz)
-				var sphere := BRUSH_RADIUS - Vector3(voxel).distance_to(center)
-				var old := _tool.get_voxel_f(voxel)
-				if sphere < old - DIG_BLEND:
+	var reach := ceili(BRUSH_RADIUS + DIG_BLEND) + 1
+	var origin := Vector3i(center.round()) - Vector3i.ONE * reach
+	var size := reach * 2 + 1
+	var buffer := VoxelBuffer.new()
+	buffer.create(size, size, size)
+	buffer.set_channel_depth(VoxelBuffer.CHANNEL_SDF, VoxelBuffer.DEPTH_16_BIT)
+	var sdf_mask := 1 << VoxelBuffer.CHANNEL_SDF
+	_tool.copy(origin, buffer, sdf_mask)
+	for x in size:
+		for y in size:
+			for z in size:
+				var sphere := BRUSH_RADIUS - Vector3(origin + Vector3i(x, y, z)).distance_to(center)
+				var old := buffer.get_voxel_f(x, y, z, VoxelBuffer.CHANNEL_SDF)
+				if sphere >= old - DIG_BLEND:
+					buffer.set_voxel_f(smooth_max(old, sphere, DIG_BLEND), x, y, z, VoxelBuffer.CHANNEL_SDF)
+	_open_thin_shells(buffer)
+	# Участок пишется целиком: при записи по вокселям часть блоков сетки не перестраивалась.
+	_tool.paste(origin, buffer, sdf_mask)
+
+
+## Вскрывает оболочки грунта толщиной в воксель, оставшиеся после мягкого стыка: крышу над выемкой, когда шар
+## чуть ниже поверхности, и стенку между шарами. Воксель грунта, у которого вдоль какой-нибудь оси с обеих
+## сторон воздух, становится воздухом; воксель ровно на поверхности (0) — тоже оболочка нулевой толщины.
+## Только оси: диагонали съедали бы края ямы.
+static func _open_thin_shells(buffer: VoxelBuffer) -> void:
+	var size := buffer.get_size()
+	var axes: Array[Vector3i] = [Vector3i(1, 0, 0), Vector3i(0, 1, 0), Vector3i(0, 0, 1)]
+	var opened := {}
+	for x in range(1, size.x - 1):
+		for y in range(1, size.y - 1):
+			for z in range(1, size.z - 1):
+				if buffer.get_voxel_f(x, y, z, VoxelBuffer.CHANNEL_SDF) > 0.0:
 					continue
-				_tool.set_voxel_f(voxel, smooth_max(old, sphere, DIG_BLEND))
+				for axis in axes:
+					var before := buffer.get_voxel_f(x - axis.x, y - axis.y, z - axis.z, VoxelBuffer.CHANNEL_SDF)
+					var after := buffer.get_voxel_f(x + axis.x, y + axis.y, z + axis.z, VoxelBuffer.CHANNEL_SDF)
+					if before > 0.0 and after > 0.0:
+						opened[Vector3i(x, y, z)] = minf(before, after) * 0.5
+						break
+	for voxel: Vector3i in opened:
+		buffer.set_voxel_f(opened[voxel], voxel.x, voxel.y, voxel.z, VoxelBuffer.CHANNEL_SDF)
 
 
 ## Гладкий максимум: равен max(a, b), когда a и b различаются больше чем на k, и плавно больше рядом со стыком.
