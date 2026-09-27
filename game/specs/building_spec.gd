@@ -30,6 +30,11 @@ func after() -> void:
 	_stand.free()
 
 
+## Сценарий, в котором прицел не дошёл до цели, проверял не то место, что задумано.
+func after_test() -> void:
+	assert_array(builder.aim_misses()).is_empty()
+
+
 ## Герой на поле, камера смотрит вдоль −Z, построек нет, режим строительства включён.
 func _given_on_field() -> void:
 	await hero.begin_on_start()
@@ -43,6 +48,13 @@ func _given_foundation_ahead() -> void:
 	await _given_on_field()
 	await builder.aim_at(AHEAD)
 	await builder.place()
+
+
+## Точка на земле перед героем и правее его. Прицел идёт из-за правого плеча: ближе 0,75 м
+## к герою он землю не достаёт.
+func _beside_hero(ahead: float) -> Vector3:
+	var forward := hero.camera_forward_flat()
+	return hero.position() + forward * ahead + forward.cross(Vector3.UP) * 0.6
 
 
 func _yaw(v: Vector3) -> float:
@@ -238,7 +250,7 @@ func test_BLD_S9_part_overlapping_part_item_or_hero_is_red() -> void:
 	assert_bool(builder.ghost_green()).is_false()
 	await builder.place()
 	# When / Then: там, где стоит герой
-	await builder.aim_at(hero.position() + hero.camera_forward_flat() * 0.7)
+	await builder.aim_at(_beside_hero(1.0))
 	assert_bool(builder.ghost_green()).is_false()
 	await builder.place()
 	# Then
@@ -316,16 +328,19 @@ func test_BLD_S11_b_toggles_build_mode_keys_choose_tab_changes_size() -> void:
 	assert_bool(builder.ghost_visible()).is_false()
 
 
-## BLD-3.2
+## BLD-3.2, MOV-2.5
 func test_BLD_S12_ghost_shows_at_crosshair_within_8_m_green_when_allowed() -> void:
 	# Given
 	await _given_on_field()
 	# When: прицел на землю в 5 м
 	var near := hero.position() + Vector3(0, 0, -5)
 	await builder.aim_at(near)
-	# Then: зелёный призрак в прицеле
+	# Then: зелёный призрак там, куда указывает центр экрана
 	assert_bool(builder.ghost_visible()).is_true()
 	assert_bool(builder.ghost_green()).is_true()
+	var crosshair: Vector3 = hero.crosshair_point()
+	var ghost := builder.ghost_center()
+	assert_float(Vector2(ghost.x - crosshair.x, ghost.z - crosshair.z).length()).is_less(0.01)
 	# When: прицел дальше 8 м
 	await builder.aim_at(hero.position() + Vector3(0, 0, -9.5))
 	# Then: призрака нет
@@ -432,8 +447,9 @@ func test_BLD_S17_item_overlapping_item_part_or_hero_is_red() -> void:
 	# When / Then: ящик на землю, заходя на фундамент
 	await builder.aim_at(builder.grid_point(Vector3(1, 0, 2.1)))
 	assert_bool(builder.ghost_green()).is_false()
-	# When / Then: ящик на героя
-	await builder.aim_at(hero.position() + hero.camera_forward_flat() * 0.6)
+	# When / Then: стол, задевающий героя
+	await builder.choose_table()
+	await builder.aim_at(_beside_hero(0.6))
 	assert_bool(builder.ghost_green()).is_false()
 	await builder.place()
 	# Then

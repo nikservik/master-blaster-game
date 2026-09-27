@@ -64,8 +64,8 @@ func test_distance_to_building_is_measured_from_nearest_part() -> void:
 
 func test_overlap_ignores_touching_and_wall_corners_but_finds_real_overlap() -> void:
 	var builder := auto_free(Builder.new()) as Builder
-	builder.set_physics_process(false)
 	add_child(builder)
+	builder.set_physics_process(false)
 	var building := Building.new()
 	builder.add_child(building)
 	building.add_part(K.FOUNDATION, 0, 0, Vector2(1, 1), 0)

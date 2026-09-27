@@ -1,14 +1,18 @@
 class_name CameraRig
 extends Node3D
 
-## Камера от третьего лица. Следует за героем, вращается мышью при захваченном курсоре.
-## У стен камеру придвигает дочерний SpringArm3D. Центр вращения выше головы, а камера
-## всегда смотрит на героя: прижатая к стене, она оказывается над ним, а не внутри него.
+## Камера от третьего лица из-за правого плеча. Следует за героем, вращается мышью при захваченном
+## курсоре. Центр вращения выше головы, камера сдвинута вправо и смотрит на точку правее груди героя.
+## Поэтому луч прицела из центра экрана всегда идёт правее героя и не задевает его.
+## У стен камеру придвигают два SpringArm3D: вбок от центра вращения к плечу, затем назад от плеча.
+## Так путь от героя к камере всегда свободен и камера не выглядывает из-за угла.
 
 ## Центр вращения выше макушки героя (капсула 1,8 м).
 const PIVOT_HEIGHT := 2.2
-## Куда смотрит камера: грудь героя.
+## Высота точки, на которую смотрит камера, — уровень груди.
 const LOOK_HEIGHT := 1.4
+## Сдвиг вправо: больше радиуса капсулы (0,4 м), чтобы луч прицела проходил мимо героя.
+const SHOULDER := 0.6
 const MOUSE_SENSITIVITY := 0.003
 ## Ограничения наклона: камера не уходит под героя и не встаёт над ним вертикально.
 const MIN_PITCH := deg_to_rad(-70.0)
@@ -23,7 +27,7 @@ var _cursor_captured := false
 
 @onready var _hero: Node3D = get_parent()
 @onready var _pitch_pivot: Node3D = $Pitch
-@onready var _camera: Camera3D = $Pitch/SpringArm/Camera
+@onready var _camera: Camera3D = $Pitch/Shoulder/Arm/Camera
 
 
 func _ready() -> void:
@@ -34,8 +38,8 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	var hero_origin := _hero.get_global_transform_interpolated().origin
 	global_position = hero_origin + Vector3.UP * PIVOT_HEIGHT
-	var target := hero_origin + Vector3.UP * LOOK_HEIGHT
-	# До первого шага физики SpringArm ещё не отодвинул камеру: она ровно над целью.
+	var target := hero_origin + Vector3.UP * LOOK_HEIGHT + global_basis.x * SHOULDER
+	# Прижатая к центру вращения камера стоит ровно над целью: смотреть некуда.
 	if Vector2(_camera.global_position.x - target.x, _camera.global_position.z - target.z).length() > 0.001:
 		_camera.look_at(target)
 
@@ -59,6 +63,13 @@ func reset_view() -> void:
 	yaw = 0.0
 	pitch = DEFAULT_PITCH
 	_apply()
+
+
+## Луч прицела: из камеры через центр экрана (MOV-2.5). Возвращает [from: Vector3, dir: Vector3],
+## dir — единичный. С этой точкой работают строительство и копание.
+func aim_ray() -> Array:
+	var center := _camera.get_viewport().get_visible_rect().size / 2.0
+	return [_camera.project_ray_origin(center), _camera.project_ray_normal(center)]
 
 
 func _capture_cursor(captured: bool) -> void:

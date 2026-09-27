@@ -22,6 +22,10 @@ func _init(hero: Hero) -> void:
 func begin_on_start() -> void:
 	for action in MOVE_ACTIONS + [&"jump"]:
 		Input.action_release(action)
+	# Без окна Godot даёт экран 64 × 64; кадр игрока — окно игры из настроек проекта.
+	_hero.get_tree().root.size = Vector2i(
+		ProjectSettings.get_setting("display/window/size/viewport_width"),
+		ProjectSettings.get_setting("display/window/size/viewport_height"))
 	_hero.respawn()
 	_hero.camera_rig.reset_view()
 	await click_in_window()
@@ -146,6 +150,36 @@ func is_hero_visible() -> bool:
 	var query := PhysicsRayQueryParameters3D.create(camera_position(), head, 1)
 	var blocked := not _hero.get_world_3d().direct_space_state.intersect_ray(query).is_empty()
 	return not inside_capsule and _camera().is_position_in_frustum(head) and not blocked
+
+
+func screen_center() -> Vector2:
+	return _hero.get_viewport().get_visible_rect().size / 2.0
+
+
+## Середина видимой метки прицела на экране; null, если прицела не видно.
+func crosshair_on_screen() -> Variant:
+	var mark := _hero.get_node("CameraRig/Hud/Crosshair") as Control
+	return mark.get_global_rect().get_center() if mark.is_visible_in_tree() else null
+
+
+## Луч из камеры через центр экрана — туда, куда игрок видит прицел.
+func _center_ray(mask: int) -> Dictionary:
+	var center := screen_center()
+	var from := _camera().project_ray_origin(center)
+	var to := from + _camera().project_ray_normal(center) * 50.0
+	var query := PhysicsRayQueryParameters3D.create(from, to, mask)
+	return _hero.get_world_3d().direct_space_state.intersect_ray(query)
+
+
+## Точка мира в центре экрана; null, если там небо.
+func crosshair_point() -> Variant:
+	var hit := _center_ray(1)
+	return null if hit.is_empty() else hit.position
+
+
+## Закрывает ли герой прицел: луч через центр экрана задевает капсулу героя.
+func hero_covers_crosshair() -> bool:
+	return not _center_ray(2).is_empty()
 
 
 func is_cursor_captured() -> bool:

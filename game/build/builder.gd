@@ -45,7 +45,6 @@ var _ghost: Node3D
 var _ghost_key := ""
 var _ghost_material: StandardMaterial3D
 var _hud: Label
-var _crosshair: ColorRect
 
 
 func _ready() -> void:
@@ -57,12 +56,6 @@ func _ready() -> void:
 	_hud = Label.new()
 	_hud.position = Vector2(16, 16)
 	layer.add_child(_hud)
-	_crosshair = ColorRect.new()
-	_crosshair.color = Color(1, 1, 1, 0.9)
-	_crosshair.size = Vector2(6, 6)
-	_crosshair.set_anchors_preset(Control.PRESET_CENTER)
-	_crosshair.position -= Vector2(3, 3)
-	layer.add_child(_crosshair)
 	_update_hud()
 
 
@@ -138,11 +131,9 @@ func items() -> Array[BuildItem]:
 # --- Прицел и план установки ---------------------------------------------
 
 func _cast_aim() -> Dictionary:
-	var camera := get_viewport().get_camera_3d()
-	if camera == null:
-		return {}
-	var from := camera.global_position
-	var query := PhysicsRayQueryParameters3D.create(from, from - camera.global_basis.z * (REACH * 3.0), 1)
+	var ray := hero.camera_rig.aim_ray()
+	var from: Vector3 = ray[0]
+	var query := PhysicsRayQueryParameters3D.create(from, from + (ray[1] as Vector3) * (REACH * 3.0), 1)
 	return get_world_3d().direct_space_state.intersect_ray(query)
 
 
@@ -290,7 +281,6 @@ func _make_ghost() -> Node3D:
 
 
 func _update_hud() -> void:
-	_crosshair.visible = active
 	if not active:
 		_hud.text = ""
 		return

@@ -13,6 +13,7 @@ const PIXELS_PER_METER := 12.0
 var _builder: Builder
 var _hero: HeroDriver
 var _tree: SceneTree
+var _aim_misses: Array[String] = []
 
 
 func _init(builder: Builder, hero: HeroDriver) -> void:
@@ -32,6 +33,7 @@ func begin_empty() -> void:
 	_builder.size_index = 0
 	_builder.quarter_turns = 0
 	_builder.item_turn = 0.0
+	_aim_misses.clear()
 	await _hero.wait(2)
 
 
@@ -97,25 +99,32 @@ func remove() -> void:
 
 
 ## Двигает мышь, пока точка в центре экрана не окажется на цели, — как игрок наводит прицел.
+## Промах копится в aim_misses(): спека проверяет его после сценария.
 func aim_at(target: Vector3) -> void:
 	for i in AIM_STEPS:
 		await _hero.wait(1)
-		var hero_at := _hero.position()
-		var to_target := Vector3(target.x - hero_at.x, 0.0, target.z - hero_at.z)
+		var camera_at := _hero.camera_position()
+		var to_target := Vector3(target.x - camera_at.x, 0.0, target.z - camera_at.z)
 		var yaw_error := _hero.camera_forward_flat().signed_angle_to(to_target.normalized(), Vector3.UP)
-		var aim: Variant = _builder.aim_point()
+		var aim: Variant = _hero.crosshair_point()
 		var distance_error := 1.0
 		if aim != null:
 			var aim_at_point: Vector3 = aim
 			if aim_at_point.distance_to(target) < AIM_TOLERANCE:
 				return
-			distance_error = Vector2(aim_at_point.x - hero_at.x, aim_at_point.z - hero_at.z).length() - to_target.length()
+			distance_error = Vector2(aim_at_point.x - camera_at.x, aim_at_point.z - camera_at.z).length() - to_target.length()
+		var from_hero := Vector2(target.x - _hero.position().x, target.z - _hero.position().z).length()
 		var motion := InputEventMouseMotion.new()
-		var step := Vector2(-yaw_error / CameraRig.MOUSE_SENSITIVITY, clampf(distance_error * PIXELS_PER_METER * _pitch_gain(to_target.length()), -60.0, 60.0))
+		var step := Vector2(-yaw_error / CameraRig.MOUSE_SENSITIVITY, clampf(distance_error * PIXELS_PER_METER * _pitch_gain(from_hero), -60.0, 60.0))
 		motion.relative = step
 		motion.screen_relative = step
 		_builder.get_viewport().push_input(motion)
-	push_error("прицел не дошёл до %s, точка под прицелом %s" % [target, _builder.aim_point()])
+	_aim_misses.append("прицел не дошёл до %s, точка в центре экрана %s" % [target, _hero.crosshair_point()])
+
+
+## Промахи наведения за сценарий: цели, до которых прицел не дошёл.
+func aim_misses() -> Array[String]:
+	return _aim_misses
 
 
 ## Вдали дальность прицела резко меняется от наклона камеры: шаг мыши уменьшается с расстоянием.
@@ -135,6 +144,11 @@ func ghost_visible() -> bool:
 
 func ghost_green() -> bool:
 	return _builder.is_ghost_green()
+
+
+## Начало призрака: у детали — центр основания, у предмета — центр низа.
+func ghost_center() -> Vector3:
+	return _builder.ghost_transform().origin
 
 
 func ghost_yaw() -> float:

@@ -234,9 +234,11 @@ func test_MOV_S13_camera_stays_behind_and_above_and_follows() -> void:
 	# Given
 	await hero.begin_on_start()
 	var offset := hero.camera_position() - hero.position()
-	# Then: сзади (камера смотрит на героя) и выше головы
+	var right := hero.camera_forward_flat().cross(Vector3.UP)
+	# Then: сзади, выше головы и правее — из-за правого плеча
 	assert_float(offset.dot(hero.camera_forward_flat())).is_less(-2.0)
 	assert_float(offset.y).is_greater(2.0)
+	assert_float(offset.dot(right)).is_greater(0.4)
 	assert_bool(hero.is_hero_visible()).is_true()
 	# When
 	await hero.run_forward(40)
@@ -291,6 +293,28 @@ func test_MOV_S16_wall_behind_hero_pulls_camera_closer_and_hero_stays_visible() 
 	# Then: камера всё ещё перед стеной и герой виден
 	assert_float(hero.camera_position().z).is_less(level.back_wall_face_z())
 	assert_bool(hero.is_hero_visible()).is_true()
+
+
+## MOV-2.5
+func test_MOV_S20_crosshair_is_in_screen_center_and_hero_never_covers_it() -> void:
+	# Given: игра, режим строительства выключен
+	await hero.begin_on_start()
+	# Then: прицел в центре экрана, указывает на площадку, герой его не закрывает
+	assert_vector(hero.crosshair_on_screen()).is_equal_approx(hero.screen_center(), Vector2(1, 1))
+	assert_object(hero.crosshair_point()).is_not_null()
+	assert_bool(hero.hero_covers_crosshair()).is_false()
+	# When / Then: камера сверху, снизу, сбоку и у стены за спиной — герой прицел не закрывает
+	await hero.tilt_camera(5000.0)
+	assert_bool(hero.hero_covers_crosshair()).is_false()
+	await hero.tilt_camera(-10000.0)
+	assert_bool(hero.hero_covers_crosshair()).is_false()
+	await hero.turn_camera(HeroDriver.PIXELS_PER_TURN / 3.0)
+	assert_bool(hero.hero_covers_crosshair()).is_false()
+	await hero.begin_on_start()
+	await hero.stand_at(level.spot_with_back_to_wall(0.4))
+	await hero.tilt_camera(3000.0)
+	assert_bool(hero.hero_covers_crosshair()).is_false()
+	assert_vector(hero.crosshair_on_screen()).is_equal_approx(hero.screen_center(), Vector2(1, 1))
 
 
 ## MOV-2.4. Курсор захватывает ОС, а без окна захвата нет: спека идёт только в прогоне с окном.

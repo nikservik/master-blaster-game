@@ -50,9 +50,30 @@ script = ExtResource("2_rig")
 
 [node name="Pitch" type="Node3D" parent="CameraRig"]
 
-[node name="SpringArm" type="SpringArm3D" parent="CameraRig/Pitch"]
+[node name="Shoulder" type="SpringArm3D" parent="CameraRig/Pitch"]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 0, 0, 0)
+shape = SubResource("SphereShape3D_arm")
+spring_length = 0.6
+
+[node name="Arm" type="SpringArm3D" parent="CameraRig/Pitch/Shoulder"]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 0, 0, 0)
 shape = SubResource("SphereShape3D_arm")
 spring_length = 4.0
 
-[node name="Camera" type="Camera3D" parent="CameraRig/Pitch/SpringArm"]
+[node name="Camera" type="Camera3D" parent="CameraRig/Pitch/Shoulder/Arm"]
 current = true
+
+[node name="Hud" type="CanvasLayer" parent="CameraRig"]
+
+[node name="Crosshair" type="ColorRect" parent="CameraRig/Hud"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -3.0
+offset_top = -3.0
+offset_right = 3.0
+offset_bottom = 3.0
+mouse_filter = 2
+color = Color(1, 1, 1, 0.9)
