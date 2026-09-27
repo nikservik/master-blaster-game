@@ -132,6 +132,7 @@ func dig(center: Vector3) -> void:
 	_tool.mode = VoxelTool.MODE_REMOVE
 	_tool.do_sphere(center, BRUSH_RADIUS)
 	_paint_dirt(center)
+	_clear_plants(center)
 
 
 ## Насыпать шар грунта; насыпь — земля.
@@ -139,6 +140,14 @@ func fill(center: Vector3) -> void:
 	_tool.mode = VoxelTool.MODE_ADD
 	_tool.do_sphere(center, BRUSH_RADIUS)
 	_paint_dirt(center)
+	_clear_plants(center)
+
+
+## Растения и камни в зоне правки убираются: иначе они висят над ямой или тонут в насыпи.
+func _clear_plants(center: Vector3) -> void:
+	for child in get_children():
+		if child is VoxelInstancer:
+			(child as VoxelInstancer).remove_instances_in_sphere(center, DIRT_RADIUS)
 
 
 func _paint_dirt(center: Vector3) -> void:
