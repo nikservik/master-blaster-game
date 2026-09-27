@@ -22,6 +22,14 @@ COMMIT = [P["graze"], P["drink"], P["rest"], P["scavenge"], P["hunt"]]
 PREY_OPTS = list(S.REACTIONS_PREY)          # continue, freeze, flee, investigate
 PRED_OPTS = list(S.REACTIONS_PRED)          # continue, stalk, investigate
 COMPASS = ["E", "NE", "N", "NW", "W", "SW", "S", "SE"]
+# Роль у вопросов паттерна и реакции (E1): с ней распределения резче и характеры различаются сильнее.
+ROLE = "You decide what this wild {name} does next, as a real animal would."
+
+
+def role(s: int) -> str:
+    return ROLE.format(name=S.SPECIES[s]["name"])
+
+
 Q_ALARM = "Should the animal call an alarm to warn others right now?"
 Q_JOIN = "Should the animal join the nearby animals of its kind as a group?"
 Q_CHAL = "Should the animal challenge the group leader for leadership now?"
@@ -267,60 +275,84 @@ def _where(sim: Sim, i: int, p: np.ndarray) -> str:
     return f"{np.hypot(*v):.0f} m {bearing(v)}"
 
 
+LEVEL = {"hunger": ["not hungry", "a bit hungry", "hungry", "very hungry", "starving"],
+         "thirst": ["not thirsty", "a bit thirsty", "thirsty", "very thirsty", "desperately thirsty"],
+         "fatigue": ["fresh", "a bit tired", "tired", "very tired", "exhausted"]}
+# Черта характера или физики словами: (низкое, высокое); середина не упоминается.
+TRAIT_WORDS = {"boldness": ("timid", "very bold"), "curiosity": ("incurious", "very curious"),
+               "sociability": ("solitary", "very sociable"), "dominance": ("submissive", "dominant"),
+               "vigilance": ("careless", "very watchful")}
+PHYS_WORDS = {"speed": ("slow", "fast"), "stamina": ("tires quickly", "has great endurance"),
+              "strength": ("weak", "strong"), "senses": ("has dull senses", "has sharp senses")}
+
+
+def _level(name: str, v: float) -> str:
+    return LEVEL[name][min(4, int(v * 5))]
+
+
+def _traits(names, words, values) -> list[str]:
+    return [words[n][0] if v < 0.3 else words[n][1] for n, v in zip(names, values) if v < 0.3 or v > 0.7]
+
+
 def state_text(sim: Sim, i: int, kind: int) -> str:
-    """Плотный state особи, 100–300 токенов."""
+    """State особи короткими английскими фразами, 100–300 токенов. Формат выбран в E1 (eco/formats.py): фразы
+    дают Kev заметно более резкие распределения и различие характеров, чем плотный YAML с числами."""
     s = int(sim.sp[i]); sp = S.SPECIES[s]; yd = sim.year_days
-    age_y = sim.age[i] / yd
     juv = sim.age[i] < S.MATURITY[s] * yd
     tr, ph = sim.traits[i], sim.phys[i]
-    L = [f"species: {sp['name']}",
-         f"sex: {'male' if sim.sex[i] else 'female'}, age {age_y:.1f} years{' (young)' if juv else ''}"
-         f"{', pregnant' if sim.pregnant[i] else ''}",
-         f"hunger {sim.hunger[i]:.2f}, thirst {sim.thirst[i]:.2f}, fatigue {sim.fatigue[i]:.2f}, "
-         f"health {sim.health[i]:.2f}, stamina {sim.stamina[i]:.2f}",
-         ", ".join(f"{n} {v:.2f}" for n, v in zip(TRAITS, tr)),
-         ", ".join(f"{n} {v:.2f}" for n, v in zip(PHYS, ph)),
-         f"time: {sim.daypart()}, season: {S.SEASONS[sim.season()]}, forest here {sim.world.forest_at(sim.pos[i][None])[0]:.1f}",
-         f"doing: {S.PATTERNS[sim.pattern[i]]} for {sim.t - sim.pattern_t[i]:.0f} s"]
+    L = [f"A wild {sp['name']}, {'male' if sim.sex[i] else 'female'}, {sim.age[i] / yd:.1f} years old"
+         f"{', young' if juv else ''}{', pregnant' if sim.pregnant[i] else ''}. "
+         f"It is {sim.daypart()} in {S.SEASONS[sim.season()]}, "
+         f"{'in dense forest' if sim.world.forest_at(sim.pos[i][None])[0] > 0.6 else 'in open woodland'}.",
+         f"It is {_level('hunger', sim.hunger[i])}, {_level('thirst', sim.thirst[i])} and {_level('fatigue', sim.fatigue[i])}"
+         f"{', wounded' if sim.health[i] < 0.5 else ''}{', out of breath' if sim.stamina[i] < 0.3 else ''}."]
+    look = _traits(TRAITS, TRAIT_WORDS, tr) + _traits(PHYS, PHYS_WORDS, ph)
+    if look:
+        L.append(f"It is {', '.join(look)}.")
+    L.append(f"It has been doing this for {sim.t - sim.pattern_t[i]:.0f} s: {S.PATTERNS[sim.pattern[i]]}.")
     g = sim.grp[i]
     lead = sim._lead[i]
     if g >= 0:
         n = int(sim._gs[i])
         if sim.g_leader[g] == i:
-            L.append(f"group: leader of {n}")
+            L.append(f"It leads a group of {n}.")
+        elif lead >= 0:
+            L.append(f"It is in a group of {n}; the leader is {_where(sim, i, sim.pos[lead])} and doing: "
+                     f"{S.PATTERNS[sim.pattern[lead]]}.")
         else:
-            L.append(f"group: member rank {sim.rank[i]} of {n}, leader {_where(sim, i, sim.pos[lead])}, "
-                     f"leader is {S.PATTERNS[sim.pattern[lead]]}" if lead >= 0 else f"group: member of {n}")
+            L.append(f"It is in a group of {n}.")
     elif lead >= 0 and s != S.K["raven"]:
-        L.append(f"mother {_where(sim, i, sim.pos[lead])}")
+        L.append(f"Its mother is {_where(sim, i, sim.pos[lead])}.")
     else:
-        L.append("alone")
+        L.append("It is alone.")
     if s == S.K["raven"] and lead >= 0:
-        L.append(f"nearest wolf {_where(sim, i, sim.pos[lead])}")
+        L.append(f"The nearest wolf is {_where(sim, i, sim.pos[lead])}.")
     th = sim.thr[i]
     if th >= 0:
         mv = "running" if sim.spd[th] > 0.5 * S.RUN[sim.sp[th]] else ("moving" if sim.spd[th] > 0.2 else "still")
         how = ["", "seen", "heard", "smelled"][sim.thr_mode[i]]
-        L.append(f"sees {S.SPECIES[sim.sp[th]]['name']}: {_where(sim, i, sim.pos[th])}, {mv}, {how}")
+        L.append(f"A {S.SPECIES[sim.sp[th]]['name']} is {_where(sim, i, sim.pos[th])}, {mv} ({how}).")
+    elif not S.IS_PRED[s]:
+        L.append("No predator in sight.")
     for k, (q, d) in enumerate(zip(sim.prey[i], sim.prey_d[i])):
         if q >= 0 and S.IS_PRED[s]:
             qj = sim.age[q] < S.MATURITY[sim.sp[q]] * yd
-            L.append(f"prey_{k}: {S.SPECIES[sim.sp[q]]['name']} {_where(sim, i, sim.pos[q])}, {'young' if qj else 'adult'}, "
-                     f"health {sim.health[q]:.1f}{', fleeing' if sim.act[q] == P['flee'] else ''}")
+            L.append(f"Prey {k}: a {'young' if qj else 'adult'} {S.SPECIES[sim.sp[q]]['name']} {_where(sim, i, sim.pos[q])}"
+                     f"{', weak' if sim.health[q] < 0.5 else ''}{', fleeing' if sim.act[q] == P['flee'] else ''}.")
     kg = sim.world.carrion[sim.world.cell(sim.pos[i][None])][0]
     if kg > 0.05:
-        L.append(f"carcass here: {kg:.1f} kg")
+        L.append(f"There is a carcass here, {kg:.1f} kg of meat.")
     if sim.cons[i] >= 0 and g < 0:
-        L.append(f"nearest {sp['name']}: {sim.cons_d[i]:.0f} m")
+        L.append(f"Another {sp['name']} is {sim.cons_d[i]:.0f} m away.")
     if not np.isnan(sim.mem_water[i, 0]):
-        L.append(f"water: {_where(sim, i, sim.mem_water[i])}")
+        L.append(f"Water is {_where(sim, i, sim.mem_water[i])}.")
     if sim.t - sim.mem_pred_t[i] < 120:
-        L.append(f"predator seen {_where(sim, i, sim.mem_pred[i])}, {sim.t - sim.mem_pred_t[i]:.0f} s ago")
+        L.append(f"It saw a predator {_where(sim, i, sim.mem_pred[i])} {sim.t - sim.mem_pred_t[i]:.0f} s ago.")
     for e in range(4):
         ago = sim.t - sim.ev_t[i, e]
         if ago < 5 and e != EV_PREY:
-            L.append(f"event: {EVENTS[e]} {ago:.0f} s ago, {_where(sim, i, sim.ev_src[i])}")
-    L.append("question: " + ("choose what to do now" if kind == KIND_PATTERN else "react to the event"))
+            L.append(f"Just now ({ago:.0f} s ago): {EVENTS[e]}, {_where(sim, i, sim.ev_src[i])}.")
+    L.append("Question: " + ("what does it do now?" if kind == KIND_PATTERN else "how does it react to the event?"))
     return "\n".join(L)
 
 
@@ -329,9 +361,9 @@ def questions_for(sim: Sim, i: int, kind: int) -> tuple[dict, dict]:
     s = int(sim.sp[i])
     q = {}
     if kind == KIND_PATTERN:
-        q["pattern"] = {"type": "choice", "criteria": S.pattern_choices(s)}
+        q["pattern"] = {"type": "choice", "criteria": S.pattern_choices(s), "instructions": role(s)}
     else:
-        q["reaction"] = {"type": "choice", "criteria": S.reaction_choices(s)}
+        q["reaction"] = {"type": "choice", "criteria": S.reaction_choices(s), "instructions": role(s)}
     tmap = {}
     if S.IS_PRED[s] and sim.prey[i, 0] >= 0:
         crit = {}
@@ -430,6 +462,17 @@ class MockOracle:
         return a
 
 
+# Сервер Kev отдаёт вероятности при температуре 2,35 (калибровка). Для выбора поведения её снимаем: p^2.35 и
+# нормировка (E1: вероятность очевидного ответа 0,29 → 0,66, характеры различаются в десятки раз сильнее).
+SHARPEN = 2.35
+
+
+def sharpen(p: dict[str, float]) -> dict[str, float]:
+    w = {k: v ** SHARPEN for k, v in p.items()}
+    z = sum(w.values()) or 1.0
+    return {k: v / z for k, v in w.items()}
+
+
 class KevOracle:
     """Оракул Kev через eco/kev.py (сервер localhost:8009)."""
 
@@ -446,7 +489,10 @@ class KevOracle:
 
     async def ask(self, state: str, questions: dict) -> Answer:
         self.calls += 1
-        return await self.client.ask(state, questions)
+        a = await self.client.ask(state, questions)
+        a.probabilities = {q: sharpen(p) for q, p in a.probabilities.items()}
+        a.noul = {q: sharpen({"y": p, "n": 1.0 - p})["y"] for q, p in a.noul.items()}
+        return a
 
 
 # ---------------------------------------------------------------------- решатели поверх оракула

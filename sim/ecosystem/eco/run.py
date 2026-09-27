@@ -39,6 +39,8 @@ def parse_args(argv=None):
     ap.add_argument("--run", default=None, help="имя прогона (папка в --out)")
     ap.add_argument("--out", default=str(OUT))
     ap.add_argument("--quiet", action="store_true")
+    ap.add_argument("--scenario", default=None, choices=["wolves"],
+                    help="wolves — всплеск: к 20 косулям у центра выходит голодная стая из 5 волков в 60 м")
     return ap.parse_args(argv)
 
 
@@ -50,9 +52,22 @@ def species_list(arg: str) -> list[str]:
     return arg.split(",")
 
 
+def add_wolf_burst(sim: Sim, seed: int):
+    """Всплеск E4: 20 косуль пасутся у центра мира, в 60 м к востоку — голодная стая из 5 волков."""
+    rng = np.random.default_rng(seed)
+    c = np.array([sim.size / 2, sim.size / 2])
+    for _ in range(20):
+        sim.add("roe", c + rng.normal(0, 8, 2))
+    for _ in range(5):
+        sim.add("wolf", c + np.array([60.0, 0.0]) + rng.normal(0, 4, 2), hunger=0.9)
+
+
+
 async def main_async(a) -> dict:
     sim = Sim(a.animals, seed=a.seed, species=species_list(a.species), size=a.size, day_seconds=a.day_seconds,
               year_days=a.year_days, productivity=a.productivity)
+    if a.scenario == "wolves":
+        add_wolf_burst(sim, a.seed)
     observer = tuple(map(float, a.observer.split(","))) if a.observer else (sim.size / 2, sim.size / 2)
     oracle = None
     if a.variant not in ("random", "V0"):

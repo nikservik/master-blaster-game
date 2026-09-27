@@ -123,7 +123,7 @@ def test_state_is_dense_text_of_100_to_300_tokens_with_2_to_4_questions():
     sim, roe = _roe_sees_wolf()
     run(sim, 0.3)
     text = state_text(sim, roe, KIND_REACTION)
-    assert "species: roe deer" in text and "sees wolf" in text and "water:" in text
+    assert "A wild roe deer" in text and "A wolf is" in text and "Water is" in text
     assert 100 <= len(text) / 4 <= 300
     q, _ = questions_for(sim, roe, KIND_REACTION)
     assert 1 <= len(q) <= 4 and q["reaction"]["type"] == "choice"
@@ -156,7 +156,8 @@ def test_kev_solver_posts_state_and_applies_answer():
             drv = Driver(sim, OracleSolver("V1", oracle), "batched", m)
             for _ in range(3):
                 await drv.tick()
-        assert posted and posted[0]["state"].startswith("species: roe deer")
+        assert posted and posted[0]["state"].startswith("A wild roe deer")
+        assert posted[0]["questions"]["pattern"]["instructions"].startswith("You decide what this wild roe deer")
         assert "graze" in posted[0]["questions"]["pattern"]["criteria"]
         assert sim.pattern[i] == P["graze"]
         assert m.model_ms == [7.0]
@@ -188,3 +189,23 @@ def test_recording_writes_header_and_frames_with_decisions(tmp_path):
         assert decs and all("chosen" in d for d in decs)
         assert any("reaction" in d or "pattern" in d for d in decs)
     asyncio.run(go())
+
+
+def test_wolf_burst_scenario_adds_roe_herd_and_hungry_pack():
+    from eco.run import add_wolf_burst
+    from eco.sim import Sim
+    import eco.species as S
+    sim = Sim(100, seed=0, species=["roe", "hare", "wolf", "jay"])
+    before = sim.count()
+    add_wolf_burst(sim, 0)
+    after = sim.count()
+    assert after[S.K["roe"]] - before[S.K["roe"]] == 20
+    assert after[S.K["wolf"]] - before[S.K["wolf"]] == 5
+
+
+def test_kev_oracle_undoes_server_temperature():
+    from eco.decide import sharpen, SHARPEN
+    p = sharpen({"a": 0.5, "b": 0.3, "c": 0.2})
+    assert abs(sum(p.values()) - 1) < 1e-9
+    assert p["a"] > 0.5 and p["c"] < 0.2
+    assert abs(p["a"] / p["b"] - (0.5 / 0.3) ** SHARPEN) < 1e-9
