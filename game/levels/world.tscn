@@ -1,0 +1,22 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://terrain/world_terrain.gd" id="1_terrain"]
+[ext_resource type="PackedScene" path="res://levels/ruins.tscn" id="2_ruins"]
+[ext_resource type="Script" path="res://terrain/digger.gd" id="3_digger"]
+
+[node name="World" type="Node3D"]
+
+[node name="Terrain" type="VoxelLodTerrain" parent="."]
+script = ExtResource("1_terrain")
+
+[node name="Ruins" parent="." instance=ExtResource("2_ruins")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 40, 0)
+
+[node name="Viewer" type="VoxelViewer" parent="Ruins/Hero"]
+view_distance = 1024
+
+[node name="Digger" type="Node" parent="." node_paths=PackedStringArray("terrain", "hero", "builder")]
+script = ExtResource("3_digger")
+terrain = NodePath("../Terrain")
+hero = NodePath("../Ruins/Hero")
+builder = NodePath("../Ruins/Builder")

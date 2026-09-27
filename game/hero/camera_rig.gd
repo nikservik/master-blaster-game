@@ -44,11 +44,16 @@ func _process(_delta: float) -> void:
 		_camera.look_at(target)
 
 
+## Щелчок, который возвращает захват курсора, дальше не идёт: иначе он же копал бы или строил.
+func _input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed and not _cursor_captured:
+		_capture_cursor(true)
+		get_viewport().set_input_as_handled()
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed(&"ui_cancel"):
 		_capture_cursor(false)
-	elif event is InputEventMouseButton and event.pressed:
-		_capture_cursor(true)
 	elif event is InputEventMouseMotion and _cursor_captured:
 		look((event as InputEventMouseMotion).screen_relative)
 
