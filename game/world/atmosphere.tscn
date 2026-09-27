@@ -15,6 +15,7 @@ sky = SubResource("Sky_main")
 ambient_light_source = 3
 reflected_light_source = 2
 tonemap_mode = 4
+tonemap_exposure = 1.1
 tonemap_white = 6.0
 ssao_enabled = true
 ssao_radius = 1.5
@@ -37,7 +38,7 @@ volumetric_fog_anisotropy = 0.6
 volumetric_fog_length = 80.0
 volumetric_fog_sky_affect = 0.0
 adjustment_enabled = true
-adjustment_saturation = 1.15
+adjustment_saturation = 1.2
 
 [node name="Atmosphere" type="Node3D"]
 

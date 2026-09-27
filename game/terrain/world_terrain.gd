@@ -217,8 +217,8 @@ static func make_generator() -> VoxelGeneratorGraph:
 	var coast := _expression(g, "clamp((z - %s - (x - %s) * (x - %s) * %s) / %s, 0.0, 1.0)" % [
 		_num(COAST_START_Z), _num(FLAT_CENTER.x), _num(FLAT_CENTER.x), _num(BAY_CURVE), _num(COAST_LENGTH)],
 		["x", "z"], [x, z])
-	# Холмы стихают к берегу, чтобы пляж шёл ровной полосой.
-	var inland := "(%s + hills * 30.0 * (1.0 - c) + %s)" % [_num(RUINS_FLOOR_Y), _cliff("z")]
+	# Холмы стихают к берегу на первой трети спуска: с террасы руин видна бухта, пляж идёт ровной полосой.
+	var inland := "(%s + hills * 30.0 * clamp(1.0 - c * 3.0, 0.0, 1.0) + %s)" % [_num(RUINS_FLOOR_Y), _cliff("z")]
 	var natural := "(%s + (%s - %s) * c * c * (3.0 - 2.0 * c))" % [inland, _num(SEABED_Y), inland]
 	var height := _expression(g, "%s + (%s - %s) * w * w * (3.0 - 2.0 * w)" % [_num(FLAT_Y), natural, _num(FLAT_Y)],
 		["z", "hills", "w", "c"], [z, hills, hills_share, coast])
