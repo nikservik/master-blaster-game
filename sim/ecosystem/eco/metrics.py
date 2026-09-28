@@ -139,6 +139,8 @@ class Metrics:
                 "requested": dict(self.requested), "served": dict(self.served), "oracle_asks": self.asked,
                 "requested_per_sim_s": req / sim_s if sim_s else None, "served_per_sim_s": srv / sim_s if sim_s else None,
                 "requested_per_wall_s": req / wall, "served_per_wall_s": srv / wall, "asks_per_wall_s": self.asked / wall,
+                # ответов Kev (отправленные в конце прогона без ответа отменяются и сюда не входят)
+                "oracle_answers": len(self.model_ms), "answers_per_wall_s": len(self.model_ms) / wall,
             },
             "latency_ms": {"model": {p: pct(self.model_ms, q) for p, q in (("p50", 50), ("p95", 95), ("p99", 99))},
                            "road": {p: pct(self.road_ms, q) for p, q in (("p50", 50), ("p95", 95), ("p99", 99))}},

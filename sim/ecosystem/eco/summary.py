@@ -33,6 +33,17 @@ def fmt(v, spec=".2f"):
     return "—" if v is None else format(v, spec)
 
 
+def answers_per_s(r: dict) -> float:
+    """Ответов Kev в секунду стены. В старых отчётах счётчика нет: у V5 ответов столько, сколько особей получили
+    политику (в реальном времени — нижняя оценка); батчами каждый запрос дожидается ответа."""
+    d = r["decisions"]
+    if "answers_per_wall_s" in d:
+        return d["answers_per_wall_s"]
+    if r["variant"] == "V5" and r.get("policy") and r["time_mode"] == "realtime":
+        return r["policy"]["animals"] / r["wall_s"]
+    return d["asks_per_wall_s"]
+
+
 def row(r: dict) -> str:
     d = r["decisions"]
     lat = r["latency_ms"]
@@ -46,14 +57,14 @@ def row(r: dict) -> str:
     if "attention_tiers" in r:
         extra.append(f"внимание {r['attention_tiers']}")
     return (f"| {r['_name']} | {r['variant']} | {r['animals_start']} | {r['sim_days']:.2f} | {r['game_days_per_wall_min']:.3f} | "
-            f"{d['requested_per_sim_s']:.0f} | {d['oracle_asks']} | {d['asks_per_wall_s']:.0f} | "
+            f"{d['requested_per_sim_s']:.0f} | {d['oracle_asks']} | {answers_per_s(r):.0f} | "
             f"{fmt(lat['model']['p50'], '.0f')}/{fmt(lat['model']['p95'], '.0f')} | "
             f"{fmt(lat['road']['p50'], '.0f')}/{fmt(lat['road']['p95'], '.0f')} | {fmt(r['late_reaction_share'], '.0%')} | "
             f"{fmt(species_mean(r, 'choice_entropy_bits'))} | {fmt(species_mean(r, 'js_bold_vs_timid_bits'), '.3f')} | "
             f"{fmt((r.get('gpu') or {}).get('vram_mb_max'), '.0f')} | {', '.join(extra)} |")
 
 
-HEAD = ("| Прогон | Вариант | Животных | Игр. дней | Дней/мин | Решений/с сим. | К Kev | К Kev/с стены | Модель p50/p95 | "
+HEAD = ("| Прогон | Вариант | Животных | Игр. дней | Дней/мин | Решений/с сим. | К Kev | Ответов Kev/с | Модель p50/p95 | "
         "С дороги p50/p95 | Опоздало | Энтропия | JS хар. | VRAM, МБ | Прочее |\n|" + "---|" * 15)
 
 
@@ -66,8 +77,8 @@ def plots(reps: list[dict], img: Path, prefix: str):
             continue
         n = [r["animals_start"] for r in rs]
         ax[0].plot(n, [r["game_days_per_wall_min"] for r in rs], "o-", label=v)
-        ax[1].plot(n, [max(r["decisions"]["asks_per_wall_s"], 0.1) for r in rs], "o-", label=v)
-    for a, t in zip(ax, ["Игровых дней за минуту", "Запросов к Kev в секунду"]):
+        ax[1].plot(n, [max(answers_per_s(r), 0.1) for r in rs], "o-", label=v)
+    for a, t in zip(ax, ["Игровых дней за минуту", "Ответов Kev в секунду"]):
         a.set_xscale("log"); a.set_yscale("log"); a.set_xlabel("животных"); a.set_title(t, fontsize=10); a.grid(alpha=0.3)
     ax[0].axhline(60 / 600, color="gray", lw=0.8, ls="--")   # реальное время: сутки 600 с → 0,1 дня/мин
     ax[0].legend(fontsize=8)
